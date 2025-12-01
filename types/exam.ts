@@ -35,11 +35,26 @@ export interface AnswerUnit {
 
 export interface ExamResult {
   id: number;
-  examId: number;
-  userId: string;
-  score: number;
+  examId?: number;
+  userId?: string;
+  country?: string;
+  region?: string;
+  examDate?: string;
+  examType?: string;
+  round?: string;
+  category?: string;
+  targetAudience?: string;
+  language?: string;
+  examStatus?: string;
+  passed?: boolean;
+  examPeriod?: string;
+  actions?: {
+    payment: boolean;
+    cancel: boolean;
+  };
+  score?: number;
   feedback?: string;
-  submittedAt: string;
+  submittedAt?: string;
   gradedAt?: string;
 }
 
