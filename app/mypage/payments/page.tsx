@@ -123,10 +123,10 @@ export default function PaymentsPage() {
                   {payment.amount.toLocaleString()}
                 </td>
                 <td className="px-4 py-4 text-sm text-gray-700">
-                  (이벤트 할인) {payment.discount.toLocaleString()}
+                  (이벤트 할인) {(payment.discount || 0).toLocaleString()}
                 </td>
                 <td className="px-4 py-4 text-sm font-semibold text-gray-900">
-                  {payment.finalAmount.toLocaleString()}
+                  {(payment.finalAmount || 0).toLocaleString()}
                 </td>
                 <td className="px-4 py-4 text-sm text-gray-700">{payment.paymentMethod}</td>
                 <td className="px-4 py-4 text-sm">

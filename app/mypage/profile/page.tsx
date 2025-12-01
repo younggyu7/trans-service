@@ -201,8 +201,8 @@ export default function ProfilePage() {
           <label className="block text-sm font-semibold text-gray-700 mb-2">주소</label>
           <div className="space-y-2">
             <select
-              value={profile.address.country}
-              onChange={(e) => setProfile({...profile, address: {...profile.address, country: e.target.value}})}
+              value={typeof profile.address === 'object' ? profile.address.country : ''}
+              onChange={(e) => setProfile({...profile, address: typeof profile.address === 'object' ? {...profile.address, country: e.target.value} : {country: e.target.value, region: '', city: ''}})}
               className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="대한민국">대한민국</option>
@@ -212,8 +212,8 @@ export default function ProfilePage() {
             <div className="flex gap-2">
               <input
                 type="text"
-                value={profile.address.region}
-                onChange={(e) => setProfile({...profile, address: {...profile.address, region: e.target.value}})}
+                value={typeof profile.address === 'object' ? profile.address.region : ''}
+                onChange={(e) => setProfile({...profile, address: typeof profile.address === 'object' ? {...profile.address, region: e.target.value} : {country: '', region: e.target.value, city: ''}})}
                 placeholder="주소"
                 className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
@@ -226,8 +226,8 @@ export default function ProfilePage() {
             </div>
             <input
               type="text"
-              value={profile.address.city}
-              onChange={(e) => setProfile({...profile, address: {...profile.address, city: e.target.value}})}
+              value={typeof profile.address === 'object' ? profile.address.city : ''}
+              onChange={(e) => setProfile({...profile, address: typeof profile.address === 'object' ? {...profile.address, city: e.target.value} : {country: '', region: '', city: e.target.value}})}
               placeholder="상세주소"
               className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
@@ -239,8 +239,8 @@ export default function ProfilePage() {
           <label className="block text-sm font-semibold text-gray-700 mb-2">생년 정보</label>
           <div className="space-y-2">
             <select
-              value={profile.birthInfo.birthDate}
-              onChange={(e) => setProfile({...profile, birthInfo: {...profile.birthInfo, birthDate: e.target.value}})}
+              value={profile.birthInfo?.birthDate || ''}
+              onChange={(e) => setProfile({...profile, birthInfo: {...(profile.birthInfo || {birthDate: '', birthPlace: '', residentNumber: ''}), birthDate: e.target.value}})}
               className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">준비 서대</option>
@@ -249,15 +249,15 @@ export default function ProfilePage() {
             </select>
             <input
               type="text"
-              value={profile.birthInfo.birthPlace}
-              onChange={(e) => setProfile({...profile, birthInfo: {...profile.birthInfo, birthPlace: e.target.value}})}
+              value={profile.birthInfo?.birthPlace || ''}
+              onChange={(e) => setProfile({...profile, birthInfo: {...(profile.birthInfo || {birthDate: '', birthPlace: '', residentNumber: ''}), birthPlace: e.target.value}})}
               placeholder="개인정보"
               className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <input
               type="text"
-              value={profile.birthInfo.residentNumber}
-              onChange={(e) => setProfile({...profile, birthInfo: {...profile.birthInfo, residentNumber: e.target.value}})}
+              value={profile.birthInfo?.residentNumber || ''}
+              onChange={(e) => setProfile({...profile, birthInfo: {...(profile.birthInfo || {birthDate: '', birthPlace: '', residentNumber: ''}), residentNumber: e.target.value}})}
               placeholder="매크로"
               className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />

@@ -46,7 +46,7 @@ export default function LateCertificatePage() {
 
   const updateQuantity = (id: string, delta: number) => {
     setOptions(options.map(opt => 
-      opt.id === id ? { ...opt, quantity: Math.max(1, opt.quantity + delta) } : opt
+      opt.id === id ? { ...opt, quantity: Math.max(1, (opt.quantity || 1) + delta) } : opt
     ));
   };
 
