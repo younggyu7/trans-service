@@ -4,10 +4,10 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 const menuItems = [
-  { name: '새 의뢰 등록', href: '/client/request/new' },
-  { name: '내 의뢰 목록', href: '/client/requests' },
-  { name: '결제 내역', href: '/client/payments' },
-  { name: '프로필 설정', href: '/client/profile' },
+  { name: '새 의뢰 등록', href: '/translate/client/request/new' },
+  { name: '내 의뢰 목록', href: '/translate/client/requests' },
+  { name: '결제 내역', href: '/translate/client/payments' },
+  { name: '프로필 설정', href: '/translate/client/profile' },
 ];
 
 export default function ClientSidebar() {
