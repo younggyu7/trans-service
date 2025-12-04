@@ -2,10 +2,21 @@
 
 import { useRouter } from 'next/navigation';
 import { usePrice } from '@/lib/priceContext';
+import { useLanguageConfig, type LanguageTier } from '@/lib/languageConfig';
+
+const TIER_LABELS: Record<LanguageTier, string> = {
+  tier1: 'Tier 1',
+  tier2: 'Tier 2',
+  tier3: 'Tier 3',
+  tier4: 'Tier 4',
+};
 
 export default function PaymentGuidePage() {
   const router = useRouter();
   const { prices } = usePrice();
+  const { languages, tierMultipliers } = useLanguageConfig();
+
+  const enabledLanguages = languages.filter((l) => l.enabled);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -95,26 +106,22 @@ export default function PaymentGuidePage() {
                 </tr>
               </thead>
               <tbody>
-                <tr className="border-b border-gray-100 hover:bg-blue-50">
-                  <td className="py-2 px-3">Tier 1</td>
-                  <td className="py-2 px-3">한/영/일/중/스페인</td>
-                  <td className="py-2 px-3"><strong>×1.0</strong></td>
-                </tr>
-                <tr className="border-b border-gray-100 hover:bg-blue-50">
-                  <td className="py-2 px-3">Tier 2</td>
-                  <td className="py-2 px-3">프/독/러/베/태/아랍</td>
-                  <td className="py-2 px-3"><strong>×1.2</strong></td>
-                </tr>
-                <tr className="border-b border-gray-100 hover:bg-blue-50">
-                  <td className="py-2 px-3">Tier 3</td>
-                  <td className="py-2 px-3">포/이/터/네/스웨/핀</td>
-                  <td className="py-2 px-3"><strong>×1.5</strong></td>
-                </tr>
-                <tr className="hover:bg-blue-50">
-                  <td className="py-2 px-3">Tier 4</td>
-                  <td className="py-2 px-3">힌/인니/말/몬/우/페</td>
-                  <td className="py-2 px-3"><strong>×2.0</strong></td>
-                </tr>
+                {(Object.keys(TIER_LABELS) as LanguageTier[]).map((tier) => {
+                  const tierLanguages = enabledLanguages.filter((l) => l.tier === tier);
+                  const names = tierLanguages.map((l) => l.name).join(', ');
+                  return (
+                    <tr
+                      key={tier}
+                      className={`$${'{'}tier !== 'tier4' ? 'border-b border-gray-100' : ''}$${'}'} hover:bg-blue-50`}
+                    >
+                      <td className="py-2 px-3">{TIER_LABELS[tier]}</td>
+                      <td className="py-2 px-3">{names || '-'}</td>
+                      <td className="py-2 px-3">
+                        <strong>×{tierMultipliers[tier]}</strong>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

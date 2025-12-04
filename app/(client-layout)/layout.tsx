@@ -1,6 +1,7 @@
 'use client';
 
 import { PriceProvider } from '@/lib/priceContext';
+import { LanguageConfigProvider } from '@/lib/languageConfig';
 
 export default function ClientLayout({
   children,
@@ -9,7 +10,9 @@ export default function ClientLayout({
 }) {
   return (
     <PriceProvider>
-      {children}
+      <LanguageConfigProvider>
+        {children}
+      </LanguageConfigProvider>
     </PriceProvider>
   );
 }

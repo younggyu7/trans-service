@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useLanguageConfig } from '@/lib/languageConfig';
 
 interface RequestSettings {
   autoMatch: boolean;
@@ -12,20 +13,6 @@ interface RequestSettings {
   minPrice: number;
 }
 
-const SOURCE_LANGUAGES = [
-  { code: 'ko', label: '한국어' },
-  { code: 'en', label: '영어' },
-  { code: 'ja', label: '일어' },
-  { code: 'zh', label: '중국어' },
-];
-
-const TARGET_LANGUAGES = [
-  { code: 'ko', label: '한국어' },
-  { code: 'en', label: '영어' },
-  { code: 'ja', label: '일어' },
-  { code: 'zh', label: '중국어' },
-];
-
 const CATEGORIES = [
   { id: 'law', label: '법률' },
   { id: 'tech', label: '기술/IT' },
@@ -35,6 +22,9 @@ const CATEGORIES = [
 ];
 
 export default function TranslatorSettingsPage() {
+  const { languages } = useLanguageConfig();
+  const enabledLanguages = languages.filter((l) => l.enabled);
+
   const [settings, setSettings] = useState<RequestSettings>({
     autoMatch: true,
     sourceLanguages: ['ko', 'en'],
@@ -149,9 +139,9 @@ export default function TranslatorSettingsPage() {
 
               {isSourceDropdownOpen && (
                 <div className="absolute z-10 mt-1 w-full max-h-48 overflow-auto bg-white border border-gray-200 rounded-lg shadow-lg text-sm">
-                  {SOURCE_LANGUAGES.filter(
-                    (lang) => !settings.sourceLanguages.includes(lang.code)
-                  ).map((lang) => (
+              {enabledLanguages.filter(
+                (lang) => !settings.sourceLanguages.includes(lang.code)
+              ).map((lang) => (
                     <button
                       key={`source-${lang.code}`}
                       type="button"
@@ -162,11 +152,11 @@ export default function TranslatorSettingsPage() {
                       }}
                       className="w-full flex items-center px-4 py-2 text-left hover:bg-indigo-50"
                     >
-                      <span className="text-gray-900">{lang.label}</span>
+                      <span className="text-gray-900">{lang.name}</span>
                     </button>
                   ))}
 
-                  {SOURCE_LANGUAGES.filter(
+                  {enabledLanguages.filter(
                     (lang) => !settings.sourceLanguages.includes(lang.code)
                   ).length === 0 && (
                     <div className="px-4 py-2 text-xs text-gray-400">
@@ -180,14 +170,14 @@ export default function TranslatorSettingsPage() {
             {/* 선택된 언어 태그 */}
             <div className="mt-3 flex flex-wrap gap-2">
               {settings.sourceLanguages.map((code) => {
-                const lang = SOURCE_LANGUAGES.find((l) => l.code === code);
+                const lang = enabledLanguages.find((l) => l.code === code);
                 if (!lang) return null;
                 return (
                   <span
                     key={`selected-source-${code}`}
                     className="inline-flex items-center px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 text-xs border border-indigo-200"
                   >
-                    {lang.label}
+                    {lang.name}
                     <button
                       type="button"
                       onClick={() => handleSourceLanguageToggle(code)}
@@ -228,7 +218,7 @@ export default function TranslatorSettingsPage() {
 
               {isTargetDropdownOpen && (
                 <div className="absolute z-10 mt-1 w-full max-h-48 overflow-auto bg-white border border-gray-200 rounded-lg shadow-lg text-sm">
-                  {TARGET_LANGUAGES.filter(
+                  {enabledLanguages.filter(
                     (lang) => !settings.targetLanguages.includes(lang.code)
                   ).map((lang) => (
                     <button
@@ -240,11 +230,11 @@ export default function TranslatorSettingsPage() {
                       }}
                       className="w-full flex items-center px-4 py-2 text-left hover:bg-indigo-50"
                     >
-                      <span className="text-gray-900">{lang.label}</span>
+                      <span className="text-gray-900">{lang.name}</span>
                     </button>
                   ))}
 
-                  {TARGET_LANGUAGES.filter(
+                  {enabledLanguages.filter(
                     (lang) => !settings.targetLanguages.includes(lang.code)
                   ).length === 0 && (
                     <div className="px-4 py-2 text-xs text-gray-400">
@@ -258,14 +248,14 @@ export default function TranslatorSettingsPage() {
             {/* 선택된 언어 태그 */}
             <div className="mt-3 flex flex-wrap gap-2">
               {settings.targetLanguages.map((code) => {
-                const lang = TARGET_LANGUAGES.find((l) => l.code === code);
+                const lang = enabledLanguages.find((l) => l.code === code);
                 if (!lang) return null;
                 return (
                   <span
                     key={`selected-target-${code}`}
                     className="inline-flex items-center px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 text-xs border border-indigo-200"
                   >
-                    {lang.label}
+                    {lang.name}
                     <button
                       type="button"
                       onClick={() => handleTargetLanguageToggle(code)}

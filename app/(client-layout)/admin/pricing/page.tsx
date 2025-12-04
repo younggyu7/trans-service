@@ -2,11 +2,51 @@
 
 import Link from 'next/link';
 import { usePrice, type PriceSettings } from '@/lib/priceContext';
+import { useLanguageConfig, type LanguageTier } from '@/lib/languageConfig';
 import { useState } from 'react';
+
+const TIER_LABELS: Record<LanguageTier, string> = {
+  tier1: 'Tier 1',
+  tier2: 'Tier 2',
+  tier3: 'Tier 3',
+  tier4: 'Tier 4',
+};
 
 export default function AdminPricingPage() {
   const { prices, updatePrices } = usePrice();
+  const {
+    languages,
+    tierMultipliers,
+    updateLanguage,
+    updateTierMultiplier,
+    addLanguage,
+    removeLanguage,
+  } = useLanguageConfig();
   const [saved, setSaved] = useState(false);
+
+  const handleAddLanguage = (tier: LanguageTier) => {
+    const code = window.prompt('언어 코드를 입력하세요 (예: es)');
+    if (!code) return;
+    const trimmedCode = code.trim();
+    if (!trimmedCode) return;
+
+    const name = window.prompt('언어 이름을 입력하세요 (예: 스페인어)') ?? '';
+    const trimmedName = name.trim() || trimmedCode;
+
+    addLanguage({
+      code: trimmedCode,
+      name: trimmedName,
+      tier,
+      enabled: true,
+    });
+    setSaved(false);
+  };
+
+  const handleRemoveLanguage = (code: string) => {
+    if (!window.confirm('이 언어를 목록에서 삭제하시겠습니까?')) return;
+    removeLanguage(code);
+    setSaved(false);
+  };
 
   const handleChange = (key: keyof PriceSettings, value: number) => {
     updatePrices({ [key]: value });
@@ -37,6 +77,121 @@ export default function AdminPricingPage() {
         </div>
 
         <div className="space-y-8">
+          {/* 0. 언어 / 티어 설정 */}
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-4 pb-4 border-b">
+              0️⃣ 언어 및 티어 설정
+            </h2>
+
+            {/* 티어별 계수 */}
+            <div className="mb-6">
+              <h3 className="font-semibold text-gray-900 mb-2">티어별 계수 (가격 배수)</h3>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
+                {(Object.keys(TIER_LABELS) as LanguageTier[]).map((tier) => (
+                  <div key={tier} className="bg-gray-50 rounded-lg border border-gray-200 p-3">
+                    <div className="text-xs text-gray-600 mb-1">{TIER_LABELS[tier]}</div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-gray-700">×</span>
+                      <input
+                        type="number"
+                        step="0.1"
+                        min={0.1}
+                        value={tierMultipliers[tier]}
+                        onChange={(e) => {
+                          updateTierMultiplier(tier, Number(e.target.value));
+                          setSaved(false);
+                        }}
+                        className="w-full px-3 py-1.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* 언어별 티어 및 사용 여부 (티어별 박스) */}
+            <div>
+              <h3 className="font-semibold text-gray-900 mb-2">티어별 언어 구성</h3>
+              <p className="text-xs text-gray-500 mb-3">
+                각 티어 박스에서 언어를 추가/삭제하고, 사용 여부를 설정할 수 있습니다.
+              </p>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {(Object.keys(TIER_LABELS) as LanguageTier[]).map((tier) => {
+                  const tierLanguages = languages.filter((l) => l.tier === tier);
+                  return (
+                    <div
+                      key={tier}
+                      className="border border-gray-200 rounded-lg p-4 bg-gray-50 flex flex-col"
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <div>
+                          <div className="text-sm font-semibold text-gray-900">
+                            {TIER_LABELS[tier]}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            현재 언어 {tierLanguages.length}개
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleAddLanguage(tier)}
+                          className="px-3 py-1 rounded-md bg-indigo-600 text-white text-xs font-medium hover:bg-indigo-700"
+                        >
+                          언어 추가하기
+                        </button>
+                      </div>
+
+                      {tierLanguages.length === 0 ? (
+                        <div className="text-xs text-gray-400 border border-dashed border-gray-300 rounded-md px-3 py-4 text-center">
+                          이 티어에 등록된 언어가 없습니다.
+                        </div>
+                      ) : (
+                        <ul className="space-y-2 text-sm">
+                          {tierLanguages.map((lang) => (
+                            <li
+                              key={lang.code}
+                              className="flex items-center justify-between bg-white border border-gray-200 rounded-md px-3 py-2"
+                            >
+                              <div>
+                                <div className="text-sm text-gray-900">
+                                  {lang.name}
+                                  <span className="ml-2 text-xs text-gray-400">({lang.code})</span>
+                                </div>
+                                <label className="inline-flex items-center gap-1 mt-1 text-xs text-gray-700">
+                                  <input
+                                    type="checkbox"
+                                    checked={lang.enabled}
+                                    onChange={(e) => {
+                                      updateLanguage(lang.code, { enabled: e.target.checked });
+                                      setSaved(false);
+                                    }}
+                                  />
+                                  <span>{lang.enabled ? '사용' : '미사용'}</span>
+                                </label>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveLanguage(lang.code)}
+                                className="text-xs text-red-500 hover:text-red-700"
+                              >
+                                삭제
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              <p className="mt-3 text-xs text-gray-500">
+                활성화된 언어만 번역가 설정 페이지의 언어 선택 드롭다운 및 결제 안내 페이지의 언어 목록에 표시됩니다.
+              </p>
+            </div>
+          </div>
+
           {/* 1. 번역 방식별 기본 요금 */}
           <div className="bg-white rounded-lg border border-gray-200 p-6">
             <h2 className="text-xl font-bold text-gray-900 mb-4 pb-4 border-b">
