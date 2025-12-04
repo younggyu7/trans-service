@@ -65,6 +65,24 @@ export default function AdminDashboardPage() {
               <p className="text-sm text-gray-600">플랫폼 전체 설정 및 정책</p>
             </div>
           </Link>
+
+          {/* 시험 관리 */}
+          <Link href="/admin/exams">
+            <div className="block p-6 bg-white rounded-lg border border-gray-200 hover:shadow-lg transition-shadow cursor-pointer">
+              <div className="text-4xl mb-3">📝</div>
+              <h2 className="text-xl font-bold text-gray-900 mb-2">시험 관리</h2>
+              <p className="text-sm text-gray-600">시험 템플릿, 일정, 출제자 배정 및 응시 현황 관리</p>
+            </div>
+          </Link>
+
+          {/* 출제 현황 */}
+          <Link href="/admin/exams/status">
+            <div className="block p-6 bg-white rounded-lg border border-gray-200 hover:shadow-lg transition-shadow cursor-pointer">
+              <div className="text-4xl mb-3">✏️</div>
+              <h2 className="text-xl font-bold text-gray-900 mb-2">출제 현황</h2>
+              <p className="text-sm text-gray-600">출제자에게 배정된 시험과 출제 진행 상태를 확인합니다</p>
+            </div>
+          </Link>
         </div>
 
         <div className="mt-12 grid grid-cols-1 md:grid-cols-4 gap-6">
