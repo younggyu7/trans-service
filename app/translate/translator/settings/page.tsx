@@ -46,6 +46,8 @@ export default function TranslatorSettingsPage() {
   });
 
   const [isSaved, setIsSaved] = useState(true);
+  const [isSourceDropdownOpen, setIsSourceDropdownOpen] = useState(false);
+  const [isTargetDropdownOpen, setIsTargetDropdownOpen] = useState(false);
 
   const handleAutoMatchToggle = () => {
     setSettings({ ...settings, autoMatch: !settings.autoMatch });
@@ -127,19 +129,77 @@ export default function TranslatorSettingsPage() {
           {/* 출발 언어 */}
           <div>
             <h3 className="font-semibold text-gray-900 mb-3 text-lg">출발 언어</h3>
-            <div className="space-y-2">
-              {SOURCE_LANGUAGES.map((lang) => (
-                <label key={`source-${lang.code}`} className="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
-                  <input
-                    type="checkbox"
-                    checked={settings.sourceLanguages.includes(lang.code)}
-                    onChange={() => handleSourceLanguageToggle(lang.code)}
-                    className="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500"
-                  />
-                  <span className="ml-3 font-medium text-gray-900">{lang.label}</span>
-                </label>
-              ))}
+
+            {/* 드롭다운 버튼 */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setIsSourceDropdownOpen((prev) => !prev)}
+                className="w-full flex items-center justify-between px-4 py-2 border border-gray-300 rounded-lg bg-white text-sm hover:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              >
+                <span className="text-gray-700">
+                  {settings.sourceLanguages.length > 0
+                    ? `선택된 언어 ${settings.sourceLanguages.length}개`
+                    : '출발 언어를 선택하세요'}
+                </span>
+                <span className="ml-2 text-gray-400 text-xs">
+                  {isSourceDropdownOpen ? '▲' : '▼'}
+                </span>
+              </button>
+
+              {isSourceDropdownOpen && (
+                <div className="absolute z-10 mt-1 w-full max-h-48 overflow-auto bg-white border border-gray-200 rounded-lg shadow-lg text-sm">
+                  {SOURCE_LANGUAGES.filter(
+                    (lang) => !settings.sourceLanguages.includes(lang.code)
+                  ).map((lang) => (
+                    <button
+                      key={`source-${lang.code}`}
+                      type="button"
+                      onClick={() => {
+                        handleSourceLanguageToggle(lang.code);
+                        // 선택 후에도 드롭다운은 그대로 열어두고 싶으면 이 줄 제거
+                        // setIsSourceDropdownOpen(false);
+                      }}
+                      className="w-full flex items-center px-4 py-2 text-left hover:bg-indigo-50"
+                    >
+                      <span className="text-gray-900">{lang.label}</span>
+                    </button>
+                  ))}
+
+                  {SOURCE_LANGUAGES.filter(
+                    (lang) => !settings.sourceLanguages.includes(lang.code)
+                  ).length === 0 && (
+                    <div className="px-4 py-2 text-xs text-gray-400">
+                      선택 가능한 언어가 없습니다.
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
+
+            {/* 선택된 언어 태그 */}
+            <div className="mt-3 flex flex-wrap gap-2">
+              {settings.sourceLanguages.map((code) => {
+                const lang = SOURCE_LANGUAGES.find((l) => l.code === code);
+                if (!lang) return null;
+                return (
+                  <span
+                    key={`selected-source-${code}`}
+                    className="inline-flex items-center px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 text-xs border border-indigo-200"
+                  >
+                    {lang.label}
+                    <button
+                      type="button"
+                      onClick={() => handleSourceLanguageToggle(code)}
+                      className="ml-2 text-indigo-400 hover:text-indigo-700"
+                    >
+                      ×
+                    </button>
+                  </span>
+                );
+              })}
+            </div>
+
             {settings.sourceLanguages.length === 0 && (
               <p className="text-sm text-red-600 mt-3">최소 1개 이상 선택해주세요</p>
             )}
@@ -148,19 +208,76 @@ export default function TranslatorSettingsPage() {
           {/* 도착 언어 */}
           <div>
             <h3 className="font-semibold text-gray-900 mb-3 text-lg">도착 언어</h3>
-            <div className="space-y-2">
-              {TARGET_LANGUAGES.map((lang) => (
-                <label key={`target-${lang.code}`} className="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
-                  <input
-                    type="checkbox"
-                    checked={settings.targetLanguages.includes(lang.code)}
-                    onChange={() => handleTargetLanguageToggle(lang.code)}
-                    className="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500"
-                  />
-                  <span className="ml-3 font-medium text-gray-900">{lang.label}</span>
-                </label>
-              ))}
+
+            {/* 드롭다운 버튼 */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setIsTargetDropdownOpen((prev) => !prev)}
+                className="w-full flex items-center justify-between px-4 py-2 border border-gray-300 rounded-lg bg-white text-sm hover:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              >
+                <span className="text-gray-700">
+                  {settings.targetLanguages.length > 0
+                    ? `선택된 언어 ${settings.targetLanguages.length}개`
+                    : '도착 언어를 선택하세요'}
+                </span>
+                <span className="ml-2 text-gray-400 text-xs">
+                  {isTargetDropdownOpen ? '▲' : '▼'}
+                </span>
+              </button>
+
+              {isTargetDropdownOpen && (
+                <div className="absolute z-10 mt-1 w-full max-h-48 overflow-auto bg-white border border-gray-200 rounded-lg shadow-lg text-sm">
+                  {TARGET_LANGUAGES.filter(
+                    (lang) => !settings.targetLanguages.includes(lang.code)
+                  ).map((lang) => (
+                    <button
+                      key={`target-${lang.code}`}
+                      type="button"
+                      onClick={() => {
+                        handleTargetLanguageToggle(lang.code);
+                        // setIsTargetDropdownOpen(false);
+                      }}
+                      className="w-full flex items-center px-4 py-2 text-left hover:bg-indigo-50"
+                    >
+                      <span className="text-gray-900">{lang.label}</span>
+                    </button>
+                  ))}
+
+                  {TARGET_LANGUAGES.filter(
+                    (lang) => !settings.targetLanguages.includes(lang.code)
+                  ).length === 0 && (
+                    <div className="px-4 py-2 text-xs text-gray-400">
+                      선택 가능한 언어가 없습니다.
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
+
+            {/* 선택된 언어 태그 */}
+            <div className="mt-3 flex flex-wrap gap-2">
+              {settings.targetLanguages.map((code) => {
+                const lang = TARGET_LANGUAGES.find((l) => l.code === code);
+                if (!lang) return null;
+                return (
+                  <span
+                    key={`selected-target-${code}`}
+                    className="inline-flex items-center px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 text-xs border border-indigo-200"
+                  >
+                    {lang.label}
+                    <button
+                      type="button"
+                      onClick={() => handleTargetLanguageToggle(code)}
+                      className="ml-2 text-indigo-400 hover:text-indigo-700"
+                    >
+                      ×
+                    </button>
+                  </span>
+                );
+              })}
+            </div>
+
             {settings.targetLanguages.length === 0 && (
               <p className="text-sm text-red-600 mt-3">최소 1개 이상 선택해주세요</p>
             )}
