@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
-const menuItems = [
+const examineeMenuItems = [
   { name: '시험접수', href: '/mypage/registration' },
   { name: '시험응시', href: '/mypage/available' },
   { name: '시험결과', href: '/mypage/results' },
@@ -15,8 +15,17 @@ const menuItems = [
   { name: '전문가 신청', href: '/mypage/expert-application' },
 ];
 
+const authorMenuItems = [
+  { name: '요청온 시험 출제', href: '/mypage/exam/author/requests' },
+  { name: '출제중인 시험', href: '/mypage/exam/author/in-progress' },
+  { name: '완료된 시험 및 채점', href: '/mypage/exam/author/completed' },
+];
+
 export default function Sidebar() {
   const pathname = usePathname();
+
+  const isAuthorRoute = pathname.startsWith('/mypage/exam/author');
+  const menuItems = isAuthorRoute ? authorMenuItems : examineeMenuItems;
 
   return (
     <aside className="w-[220px] bg-gray-50 min-h-screen border-r border-gray-200 py-6 px-4 flex flex-col">

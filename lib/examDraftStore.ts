@@ -3,7 +3,7 @@
 // 간단한 인메모리 스토어 (mock)
 // 새로고침하면 초기값으로 리셋됩니다.
 
-export type DraftStatus = '출제중' | '출제완료' | '최종승인';
+export type DraftStatus = '출제자전달완료' | '출제완료' | '최종승인';
 
 export interface ExamDraft {
   id: string;
@@ -31,7 +31,33 @@ let drafts: ExamDraft[] = [
     questionCount: 6,
     durationMinutes: 90,
     assignedTranslatorId: 'tr-001',
-    status: '출제중',
+    status: '출제자전달완료',
+  },
+  {
+    id: 'draft-002',
+    templateId: 'exam-001',
+    title: '전문1급 번역 시험 A형 - 출제 완료본',
+    type: '번역',
+    mainCategory: '비즈니스',
+    middleCategory: '마케팅/기획',
+    subCategory: '마케팅 제안서',
+    questionCount: 6,
+    durationMinutes: 90,
+    assignedTranslatorId: 'tr-001',
+    status: '출제완료',
+  },
+  {
+    id: 'draft-003',
+    templateId: 'exam-002',
+    title: '프롬프트 작성 시험 B형 - 최종 승인본',
+    type: '프롬프트',
+    mainCategory: '일반',
+    middleCategory: '에세이/논술',
+    subCategory: '시사 에세이',
+    questionCount: 3,
+    durationMinutes: 60,
+    assignedTranslatorId: 'tr-002',
+    status: '최종승인',
   },
 ];
 

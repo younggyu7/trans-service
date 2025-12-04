@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { addDraft, type ExamDraft } from '@/lib/examDraftStore';
+import { addDraft, type ExamDraft, getDrafts, approveDraft } from '@/lib/examDraftStore';
 
 interface QuestionTypeSetting {
   id: string;
@@ -137,8 +137,12 @@ export default function AdminExamsPage() {
   const [selectedExamId, setSelectedExamId] = useState<string | null>(null);
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [pendingTranslatorId, setPendingTranslatorId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'create' | 'list'>('create');
+  const [draftVersion, setDraftVersion] = useState(0); // 변경 트리거용
+  const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
 
   const selectedExam = mockTemplates.find((e) => e.id === selectedExamId) ?? mockTemplates[0];
+  const drafts = getDrafts();
 
   // 문항 유형 설정 상태 (간단히 컴포넌트 로컬에서만 관리)
   const [questionTypes, setQuestionTypes] = useState<QuestionTypeSetting[]>(
@@ -166,92 +170,79 @@ export default function AdminExamsPage() {
       </header>
 
       <main className="max-w-7xl mx-auto px-6 py-8 space-y-8">
-        {/* 상단 요약 / 템플릿 불러오기 */}
+        {/* 페이지 상단 헤더 */}
         <section className="bg-white rounded-lg border border-gray-200 p-6 flex items-center justify-between gap-6">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-1">시험 템플릿 및 일정 관리</h1>
+            <h1 className="text-2xl font-bold text-gray-900 mb-1">시험 관리</h1>
             <p className="text-sm text-gray-600">
-              시험 유형, 카테고리, 문제 수, 일정, 출제자 배정 등을 한 곳에서 관리합니다.
+              왼쪽 메뉴에서 "시험 출제하기"와 "출제한 시험 리스트"를 전환하여 시험을 설정하고 진행 상황을 확인합니다.
             </p>
-          </div>
-          <div className="flex gap-3">
-            <button className="px-4 py-2 border border-gray-300 rounded-md text-sm font-semibold text-gray-700 hover:bg-gray-50">
-              템플릿 불러오기
-            </button>
-            <button className="px-4 py-2 bg-indigo-600 text-white rounded-md text-sm font-semibold hover:bg-indigo-700">
-              새 시험 만들기
-            </button>
-            <button
-              className="px-4 py-2 bg-green-600 text-white rounded-md text-sm font-semibold hover:bg-green-700"
-              onClick={() => {
-                const draft: ExamDraft = {
-                  id: `draft-${Date.now()}`,
-                  templateId: selectedExam.id,
-                  title: selectedExam.name,
-                  type: selectedExam.type,
-                  mainCategory,
-                  middleCategory: middleCategory || undefined,
-                  subCategory: subCategory || undefined,
-                  questionCount: totalQuestionCount,
-                  durationMinutes: selectedExam.durationMinutes,
-                  assignedTranslatorId: selectedExam.assignedTranslatorId,
-                  status: '출제중',
-                };
-                addDraft(draft);
-                alert('출제본이 생성되었습니다. 출제 현황에서 확인하세요.');
-              }}
-            >
-              출제하기
-            </button>
           </div>
         </section>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-          {/* 좌측: 시험 목록 */}
-          <section className="lg:col-span-1 bg-white rounded-lg border border-gray-200 p-4">
-            <h2 className="text-sm font-semibold text-gray-900 mb-3">시험 목록</h2>
-            <div className="space-y-2 max-h-[480px] overflow-y-auto text-sm">
-              {mockTemplates.map((exam) => (
-                <button
-                  key={exam.id}
-                  type="button"
-                  onClick={() => setSelectedExamId(exam.id)}
-                  className={`w-full text-left px-3 py-2 rounded-md border text-sm flex flex-col gap-1 ${
-                    selectedExam?.id === exam.id
-                      ? 'border-indigo-500 bg-indigo-50'
-                      : 'border-gray-200 bg-white hover:bg-gray-50'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold text-gray-900 truncate mr-2">{exam.name}</span>
-                    <span
-                      className={`text-xs px-2 py-0.5 rounded-full ${
-                        exam.status === 'open'
-                          ? 'bg-green-100 text-green-700'
-                          : exam.status === 'ready'
-                          ? 'bg-blue-100 text-blue-700'
-                          : 'bg-gray-100 text-gray-600'
-                      }`}
-                    >
-                      {exam.status === 'open'
-                        ? '공개 중'
-                        : exam.status === 'ready'
-                        ? '출시 대기'
-                        : '작성 중'}
-                    </span>
-                  </div>
-                  <div className="text-xs text-gray-500">
-                    {exam.type} · {exam.mainCategory} · {exam.questionCount}문항 · {exam.durationMinutes}분
-                  </div>
-                </button>
-              ))}
-            </div>
-          </section>
+        <div className="grid grid-cols-[220px,minmax(0,1fr)] gap-6 items-start">
+          {/* 좌측: 로컬 사이드바 */}
+          <aside className="bg-white rounded-lg border border-gray-200 p-4 space-y-2 text-sm">
+            <button
+              type="button"
+              onClick={() => setActiveTab('create')}
+              className={`w-full text-left px-3 py-2 rounded-md font-semibold ${
+                activeTab === 'create'
+                  ? 'bg-indigo-50 text-indigo-700 border border-indigo-200'
+                  : 'bg-white text-gray-700 border border-transparent hover:bg-gray-50'
+              }`}
+            >
+              시험 출제하기
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('list')}
+              className={`w-full text-left px-3 py-2 rounded-md font-semibold ${
+                activeTab === 'list'
+                  ? 'bg-indigo-50 text-indigo-700 border border-indigo-200'
+                  : 'bg-white text-gray-700 border border-transparent hover:bg-gray-50'
+              }`}
+            >
+              출제한 시험 리스트
+            </button>
+          </aside>
 
-          {/* 우측: 선택된 시험 상세 (스켈레톤) */}
-          <section className="lg:col-span-2 space-y-6">
-            {/* 1. 기본 정보 */}
-            <div className="bg-white rounded-lg border border-gray-200 p-5">
+          {/* 우측: 탭별 내용 */}
+          <section className="space-y-6">
+            {activeTab === 'create' ? (
+              <>
+                {/* 상단: 템플릿 불러오기 / 새 시험 / 출시 */}
+                <div className="bg-white rounded-lg border border-gray-200 p-6 flex items-center justify-between gap-6">
+                  <div>
+                    <h2 className="text-lg font-semibold text-gray-900 mb-1">시험 출제 설정</h2>
+                    <p className="text-xs text-gray-600">
+                      시험 템플릿을 선택하고, 카테고리 · 문항 유형 · 일정 · 출제자를 설정한 뒤 "출시"를 눌러 출제자에게 전달합니다.
+                    </p>
+                  </div>
+                  <div className="flex gap-3">
+                    <button
+                      className="px-4 py-2 border border-gray-300 rounded-md text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                      onClick={() => setIsTemplateModalOpen(true)}
+                    >
+                      템플릿 불러오기
+                    </button>
+                    <button
+                      className="px-4 py-2 bg-indigo-600 text-white rounded-md text-sm font-semibold hover:bg-indigo-700"
+                      onClick={() => {
+                        // TODO: 서버 연동 시 실제 저장 로직으로 교체
+                        alert('현재 시험 정보가 (mock) 저장되었습니다.');
+                      }}
+                    >
+                      현재 시험정보 저장하기
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-6">
+                  {/* 선택된 시험 상세 설정 */}
+                  <section className="space-y-6">
+                    {/* 1. 기본 정보 */}
+                    <div className="bg-white rounded-lg border border-gray-200 p-5">
               <h2 className="text-sm font-semibold text-gray-900 mb-4">1. 기본 정보</h2>
               <div className="grid grid-cols-2 gap-4 text-sm mb-4">
                 <div>
@@ -601,9 +592,193 @@ export default function AdminExamsPage() {
                 </button>
               </div>
             </div>
+                  </section>
+                </div>
+              </>
+            ) : (
+              <div className="bg-white rounded-lg border border-gray-200 p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h2 className="text-lg font-semibold text-gray-900">출제한 시험 리스트</h2>
+                    <p className="text-xs text-gray-600 mt-1">
+                      관리자에서 출시한 시험의 출제 진행 상태를 확인하고, 출제 완료된 시험을 최종 승인할 수 있습니다.
+                    </p>
+                  </div>
+                  <span className="text-xs text-gray-500">총 {drafts.length}건</span>
+                </div>
+
+                {drafts.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-16 border border-dashed border-gray-200 rounded-lg bg-gray-50">
+                    <p className="text-gray-500 mb-2">아직 출시한 시험이 없습니다.</p>
+                    <p className="text-xs text-gray-400 mb-4">
+                      상단 메뉴에서 "시험 출제하기"를 선택하고, 출시 버튼을 눌러 출제자를 배정할 시험을 생성하세요.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200 text-sm">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-4 py-3 text-left font-medium text-gray-500">시험명</th>
+                          <th className="px-4 py-3 text-left font-medium text-gray-500">유형</th>
+                          <th className="px-4 py-3 text-left font-medium text-gray-500">카테고리</th>
+                          <th className="px-4 py-3 text-center font-medium text-gray-500">문항 수</th>
+                          <th className="px-4 py-3 text-center font-medium text-gray-500">시험 시간</th>
+                          <th className="px-4 py-3 text-left font-medium text-gray-500">출제자</th>
+                          <th className="px-4 py-3 text-center font-medium text-gray-500">상태</th>
+                          <th className="px-4 py-3 text-center font-medium text-gray-500">관리</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100 bg-white">
+                        {drafts.map((draft) => {
+                          const categoryLabel = [
+                            draft.mainCategory,
+                            draft.middleCategory,
+                            draft.subCategory,
+                          ]
+                            .filter(Boolean)
+                            .join(' / ');
+
+                          let statusBadgeClass = 'bg-gray-100 text-gray-700 border-gray-200';
+                          let statusLabel = draft.status;
+                          if (draft.status === '출제자전달완료') {
+                            statusBadgeClass = 'bg-yellow-100 text-yellow-800 border-yellow-200';
+                            statusLabel = '출제자에게 전달완료';
+                          } else if (draft.status === '출제완료') {
+                            statusBadgeClass = 'bg-blue-100 text-blue-800 border-blue-200';
+                          } else if (draft.status === '최종승인') {
+                            statusBadgeClass = 'bg-green-100 text-green-800 border-green-200';
+                          }
+
+                          return (
+                            <tr key={draft.id} className="hover:bg-gray-50">
+                              <td className="px-4 py-3 align-top">
+                                <div className="font-medium text-gray-900">{draft.title}</div>
+                                <div className="text-xs text-gray-400">ID: {draft.id}</div>
+                              </td>
+                              <td className="px-4 py-3 align-top text-gray-700">{draft.type}</td>
+                              <td className="px-4 py-3 align-top text-gray-700">{categoryLabel}</td>
+                              <td className="px-4 py-3 align-top text-center text-gray-700">{draft.questionCount}문항</td>
+                              <td className="px-4 py-3 align-top text-center text-gray-700">{draft.durationMinutes}분</td>
+                              <td className="px-4 py-3 align-top text-gray-700">
+                                {draft.assignedTranslatorId ? draft.assignedTranslatorId : '-'}
+                              </td>
+                              <td className="px-4 py-3 align-top text-center">
+                                <span
+                                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${statusBadgeClass}`}
+                                >
+                                  {statusLabel}
+                                </span>
+                              </td>
+                              <td className="px-4 py-3 align-top text-center">
+                                {draft.status === '출제완료' ? (
+                                  <button
+                                    className="px-3 py-1.5 text-xs rounded-md bg-green-600 text-white font-semibold hover:bg-green-700"
+                                    onClick={() => {
+                                      approveDraft(draft.id);
+                                      setDraftVersion((v) => v + 1);
+                                    }}
+                                  >
+                                    최종 승인하기
+                                  </button>
+                                ) : draft.status === '최종승인' ? (
+                                  <span className="text-xs text-gray-400">승인 완료</span>
+                                ) : (
+                                  <span className="text-xs text-gray-400">출제 진행 중</span>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
           </section>
         </div>
       </main>
+
+      {/* 템플릿 불러오기 모달 */}
+      {isTemplateModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="w-full max-w-md bg-white rounded-lg shadow-lg p-6 text-sm">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-base font-semibold text-gray-900">시험 템플릿 불러오기</h2>
+              <button
+                className="text-xs text-gray-500 hover:text-gray-700"
+                onClick={() => setIsTemplateModalOpen(false)}
+              >
+                닫기
+              </button>
+            </div>
+
+            <p className="text-xs text-gray-600 mb-3">
+              아래 목록에서 템플릿을 선택하면 해당 시험의 기본 정보, 카테고리, 문항 수, 일정이 현재 설정 화면에 불러와집니다.
+            </p>
+
+            <div className="max-h-64 overflow-y-auto border border-gray-200 rounded-md mb-4 divide-y divide-gray-100">
+              {mockTemplates.map((exam) => (
+                <button
+                  key={exam.id}
+                  type="button"
+                  onClick={() => {
+                    setSelectedExamId(exam.id);
+                    // 템플릿 기준으로 관련 상태 동기화
+                    setMainCategory(exam.mainCategory);
+                    setMiddleCategory(exam.middleCategory ?? '');
+                    setSubCategory(exam.subCategory ?? '');
+                    setQuestionTypes(
+                      exam.questionTypes ?? [
+                        { id: `qt-from-${exam.id}`, kind: '객관식', count: exam.questionCount },
+                      ],
+                    );
+                    setIsTemplateModalOpen(false);
+                  }}
+                  className="w-full text-left px-3 py-2 flex flex-col gap-1 text-xs bg-white hover:bg-gray-50"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-gray-900 text-sm">{exam.name}</span>
+                    <span
+                      className={`text-[11px] px-2 py-0.5 rounded-full ${
+                        exam.status === 'open'
+                          ? 'bg-green-100 text-green-700'
+                          : exam.status === 'ready'
+                          ? 'bg-blue-100 text-blue-700'
+                          : 'bg-gray-100 text-gray-600'
+                      }`}
+                    >
+                      {exam.status === 'open'
+                        ? '공개 중'
+                        : exam.status === 'ready'
+                        ? '출시 대기'
+                        : '작성 중'}
+                    </span>
+                  </div>
+                  <div className="text-[11px] text-gray-600">
+                    {exam.type} · {exam.mainCategory}{' '}
+                    {exam.middleCategory ? `· ${exam.middleCategory}` : ''}{' '}
+                    {exam.subCategory ? `· ${exam.subCategory}` : ''}
+                  </div>
+                  <div className="text-[11px] text-gray-500">
+                    {exam.questionCount}문항 · {exam.durationMinutes}분
+                  </div>
+                </button>
+              ))}
+            </div>
+
+            <div className="flex justify-end">
+              <button
+                className="px-3 py-1.5 border border-gray-300 rounded-md text-xs text-gray-700 hover:bg-gray-50"
+                onClick={() => setIsTemplateModalOpen(false)}
+              >
+                닫기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 출제자 배정 모달 */}
       {isAssignModalOpen && (
