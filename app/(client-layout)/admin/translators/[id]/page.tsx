@@ -1,14 +1,15 @@
 import { adminTranslators } from '@/lib/adminTranslatorsMock';
 
 interface AdminTranslatorProfilePageProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
-export default function AdminTranslatorProfilePage({ params }: AdminTranslatorProfilePageProps) {
-  const id = Number(params.id);
-  const translator = adminTranslators.find((t) => t.id === id);
+export default async function AdminTranslatorProfilePage({ params }: AdminTranslatorProfilePageProps) {
+  const { id } = await params;
+  const numericId = Number(id);
+  const translator = adminTranslators.find((t) => t.id === numericId);
 
   if (!translator) {
     return (
