@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 
 const examineeMenuItems = [
   { name: '시험접수', href: '/mypage/registration' },
@@ -18,11 +18,15 @@ const examineeMenuItems = [
 const authorMenuItems = [
   { name: '요청온 시험 출제', href: '/mypage/exam/author/requests' },
   { name: '출제중인 시험', href: '/mypage/exam/author/in-progress' },
-  { name: '완료된 시험 및 채점', href: '/mypage/exam/author/completed' },
+  { name: '완료된 시험', href: '/mypage/exam/author/completed' },
+  { name: '채점중인 시험', href: '/mypage/exam/author/completed?view=grading' },
+  { name: '채점완료 시험', href: '/mypage/exam/author/completed?view=graded' },
 ];
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const currentView = searchParams.get('view') ?? '';
 
   const isAuthorRoute = pathname.startsWith('/mypage/exam/author');
   const menuItems = isAuthorRoute ? authorMenuItems : examineeMenuItems;
@@ -51,7 +55,21 @@ export default function Sidebar() {
         <nav>
           <ul className="space-y-1">
             {menuItems.map((item) => {
-              const isActive = pathname === item.href;
+              const [hrefPath, query] = item.href.split('?');
+              let hrefView = '';
+              if (query?.startsWith('view=')) {
+                hrefView = query.substring('view='.length);
+              }
+
+              let isActive = false;
+              if (hrefView) {
+                // ?view=... 이 있는 메뉴는 경로와 view 값이 모두 일치할 때 활성화
+                isActive = pathname === hrefPath && currentView === hrefView;
+              } else {
+                // 기본 "완료된 시험" 메뉴: view 파라미터가 없을 때 활성화
+                isActive = pathname === hrefPath && !currentView;
+              }
+
               return (
                 <li key={item.href}>
                   <Link

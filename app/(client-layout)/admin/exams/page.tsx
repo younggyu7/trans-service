@@ -8,6 +8,10 @@ interface QuestionTypeSetting {
   kind: '객관식' | '주관식' | '서술형' | '번역' | '프롬프트' | 'custom';
   customLabel?: string; // kind === 'custom' 일 때 표시용 이름
   count: number;
+  // 이 유형 안에서 상/중/하 난이도 비율(%)
+  difficultyHigh?: number;
+  difficultyMedium?: number;
+  difficultyLow?: number;
 }
 
 interface ExamTemplate {
@@ -20,8 +24,26 @@ interface ExamTemplate {
   questionCount: number;
   questionTypes?: QuestionTypeSetting[]; // 문항 유형별 개수
   durationMinutes: number;
-  status: 'draft' | 'ready' | 'open' | 'closed';
+  status: 'draft' | 'ready' | 'open' | 'closed'; // 템플릿 자체 상태 (작성 중/출시 대기 등)
   assignedTranslatorId?: string; // 배정된 출제자 ID
+
+  // 전체 문항 기준 상/중/하 난이도 비율(%)
+  overallDifficultyHigh?: number;
+  overallDifficultyMedium?: number;
+  overallDifficultyLow?: number;
+
+  // 평가 기준 / 파일 종류
+  evaluationMetric?:
+    | '단어수'
+    | '검색허용횟수'
+    | '문장부호수'
+    | '수정단어수'
+    | '전체문장수'
+    | '단계'
+    | '전체문자수';
+  allowedSearchCount?: number; // 검색 허용 횟수 (공통영역 등에서 사용)
+  fileType?: string; // 출제 파일 종류 (PDF, DOCX 등)
+
   // 일정 & 조건 요약 (실제 저장 구조는 이후 확장)
   examDate?: string;
   scoringEndDate?: string;
@@ -33,6 +55,20 @@ interface ExamTemplate {
   baseFee?: number; // 단순 접수
   reviewFee?: number; // 검수 옵션
   passScore?: number;
+
+  // 관리 시스템용 메타 정보
+  registrationWeeks?: number; // 기본 접수 기간 (주)
+  registrationDeadlineOffsetDays?: number; // 시험일 기준 접수 마감 일수 (예: 10일 전)
+  scoringEndOffsetDays?: number; // 시험일 기준 채점 완료 기한 (예: 10일 후)
+  managementStatus?:
+    | '임시저장'
+    | '진행중'
+    | '진행완료'
+    | '진행취소'
+    | '자동완료'
+    | '휴면완료'
+    | '자동+휴면완료'
+    | '승인완료';
 }
 
 // 카테고리 트리 (대 / 중 / 소)
@@ -242,7 +278,7 @@ export default function AdminExamsPage() {
                   {/* 선택된 시험 상세 설정 */}
                   <section className="space-y-6">
                     {/* 1. 기본 정보 */}
-                    <div className="bg-white rounded-lg border border-gray-200 p-5">
+            <div className="bg-white rounded-lg border border-gray-200 p-5">
               <h2 className="text-sm font-semibold text-gray-900 mb-4">1. 기본 정보</h2>
               <div className="grid grid-cols-2 gap-4 text-sm mb-4">
                 <div>
@@ -333,20 +369,49 @@ export default function AdminExamsPage() {
 
               {/* 문항 유형 / 수 / 시험 시간 */}
               <div className="mt-4 border-t border-gray-100 pt-4 space-y-3">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-2">
                   <h3 className="text-xs font-semibold text-gray-900">문항 유형 및 수</h3>
-                  <button
-                    type="button"
-                    className="px-2 py-1 rounded-md border border-gray-300 text-[11px] text-gray-700 hover:bg-gray-50"
-                    onClick={() =>
-                      setQuestionTypes((prev) => [
-                        ...prev,
-                        { id: `qt-${Date.now()}`, kind: '객관식', count: 1 },
-                      ])
-                    }
-                  >
-                    + 문항 추가
-                  </button>
+                  <div className="ml-auto flex items-center gap-2">
+                    <select
+                      className="border border-gray-300 rounded-md px-2 py-1 text-[11px] bg-white"
+                      defaultValue=""
+                      onChange={(e) => {
+                        const preset = e.target.value;
+                        if (!preset) return;
+                        if (preset === '공통영역') {
+                          // 객관식 50문제 중 20개 랜덤 (기본 50문항으로 설정)
+                          setQuestionTypes([{ id: 'qt-common', kind: '객관식', count: 50 }]);
+                        } else if (preset === '번역시험') {
+                          setQuestionTypes([{ id: 'qt-trans', kind: '주관식', count: 5 }]);
+                        } else if (preset === '프롬프트시험') {
+                          setQuestionTypes([{ id: 'qt-prompt', kind: '주관식', count: 5 }]);
+                        } else if (preset === '윤리시험') {
+                          setQuestionTypes([{ id: 'qt-ethic', kind: '객관식', count: 20 }]);
+                        }
+                        e.target.value = '';
+                      }}
+                    >
+                      <option value="" disabled>
+                        출제 규칙 프리셋 선택
+                      </option>
+                      <option value="공통영역">공통 영역 (객관식 50문제 중 20개 랜덤)</option>
+                      <option value="번역시험">번역 시험 (주관식 5개 중 공용 2개)</option>
+                      <option value="프롬프트시험">프롬프트 시험 (주관식 5개 중 공용 2개)</option>
+                      <option value="윤리시험">윤리 시험 (객관식 20문제)</option>
+                    </select>
+                    <button
+                      type="button"
+                      className="px-2 py-1 rounded-md border border-gray-300 text-[11px] text-gray-700 hover:bg-gray-50"
+                      onClick={() =>
+                        setQuestionTypes((prev) => [
+                          ...prev,
+                          { id: `qt-${Date.now()}`, kind: '객관식', count: 1 },
+                        ])
+                      }
+                    >
+                      + 문항 추가
+                    </button>
+                  </div>
                 </div>
 
                 <div className="space-y-2">
@@ -399,6 +464,52 @@ export default function AdminExamsPage() {
                           }}
                         />
                       </div>
+
+                      {/* 유형별 난이도 비율 */}
+                      <div className="flex items-center gap-1 text-[11px] text-gray-500">
+                        <span>상</span>
+                        <input
+                          type="number"
+                          min={0}
+                          max={100}
+                          className="w-12 border border-gray-300 rounded-md px-1 py-0.5"
+                          value={qt.difficultyHigh ?? ''}
+                          onChange={(e) => {
+                            const value = e.target.value === '' ? undefined : Number(e.target.value) || 0;
+                            const next = [...questionTypes];
+                            next[idx] = { ...next[idx], difficultyHigh: value };
+                            setQuestionTypes(next);
+                          }}
+                        />
+                        <span>중</span>
+                        <input
+                          type="number"
+                          min={0}
+                          max={100}
+                          className="w-12 border border-gray-300 rounded-md px-1 py-0.5"
+                          value={qt.difficultyMedium ?? ''}
+                          onChange={(e) => {
+                            const value = e.target.value === '' ? undefined : Number(e.target.value) || 0;
+                            const next = [...questionTypes];
+                            next[idx] = { ...next[idx], difficultyMedium: value };
+                            setQuestionTypes(next);
+                          }}
+                        />
+                        <span>하</span>
+                        <input
+                          type="number"
+                          min={0}
+                          max={100}
+                          className="w-12 border border-gray-300 rounded-md px-1 py-0.5"
+                          value={qt.difficultyLow ?? ''}
+                          onChange={(e) => {
+                            const value = e.target.value === '' ? undefined : Number(e.target.value) || 0;
+                            const next = [...questionTypes];
+                            next[idx] = { ...next[idx], difficultyLow: value };
+                            setQuestionTypes(next);
+                          }}
+                        />
+                      </div>
                       <button
                         type="button"
                         className="ml-auto px-2 py-1 text-[11px] text-gray-500 hover:text-red-600"
@@ -426,6 +537,84 @@ export default function AdminExamsPage() {
                       defaultValue={selectedExam.durationMinutes}
                     />
                     <span className="text-[11px] text-gray-500">분</span>
+                  </div>
+                </div>
+
+                {/* 전체 문항 기준 난이도 비율 */}
+                <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-gray-700">
+                  <span className="font-semibold">전체 난이도 비율 (상/중/하, %)</span>
+                  <div className="flex items-center gap-1">
+                    <span className="text-[11px] text-gray-500">상</span>
+                    <input
+                      type="number"
+                      min={0}
+                      max={100}
+                      className="w-16 border border-gray-300 rounded-md px-2 py-1 text-xs"
+                      defaultValue={selectedExam.overallDifficultyHigh ?? 30}
+                    />
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span className="text-[11px] text-gray-500">중</span>
+                    <input
+                      type="number"
+                      min={0}
+                      max={100}
+                      className="w-16 border border-gray-300 rounded-md px-2 py-1 text-xs"
+                      defaultValue={selectedExam.overallDifficultyMedium ?? 50}
+                    />
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span className="text-[11px] text-gray-500">하</span>
+                    <input
+                      type="number"
+                      min={0}
+                      max={100}
+                      className="w-16 border border-gray-300 rounded-md px-2 py-1 text-xs"
+                      defaultValue={selectedExam.overallDifficultyLow ?? 20}
+                    />
+                  </div>
+                  <span className="text-[11px] text-gray-400">(합계 100% 기준으로 설정)</span>
+                </div>
+
+                {/* 평가 기준 / 파일 종류 */}
+                <div className="mt-4 border-t border-gray-100 pt-4 space-y-3 text-xs text-gray-700">
+                  <h3 className="text-xs font-semibold text-gray-900">평가 기준 · 파일 종류</h3>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div>
+                      <label className="block mb-1 text-[11px] text-gray-500">평가 기준</label>
+                      <select
+                        className="w-full border border-gray-300 rounded-md px-2 py-1 bg-white"
+                        defaultValue={selectedExam.evaluationMetric ?? ''}
+                      >
+                        <option value="">선택하세요</option>
+                        <option value="단어수">단어수</option>
+                        <option value="검색허용횟수">검색 허용횟수</option>
+                        <option value="문장부호수">문장부호수</option>
+                        <option value="수정단어수">수정 단어수</option>
+                        <option value="전체문장수">전체 문장수</option>
+                        <option value="단계">단계</option>
+                        <option value="전체문자수">전체 문자수</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block mb-1 text-[11px] text-gray-500">검색 허용횟수</label>
+                      <input
+                        type="number"
+                        min={0}
+                        className="w-full border border-gray-300 rounded-md px-2 py-1"
+                        defaultValue={selectedExam.allowedSearchCount ?? 0}
+                      />
+                      <p className="mt-1 text-[11px] text-gray-400">공통 영역 등에서 사용</p>
+                    </div>
+                    <div>
+                      <label className="block mb-1 text-[11px] text-gray-500">파일 종류 (출제파일)</label>
+                      <input
+                        type="text"
+                        placeholder="예: PDF, DOCX 등"
+                        className="w-full border border-gray-300 rounded-md px-2 py-1"
+                        defaultValue={selectedExam.fileType ?? ''}
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -560,6 +749,40 @@ export default function AdminExamsPage() {
                   </div>
                 </div>
               </div>
+
+              {/* 관리 규칙 메타 정보 (접수 기간, 마감 기준 등) */}
+              <div className="mt-4 border-t border-gray-100 pt-4 grid grid-cols-3 gap-3 text-xs text-gray-700">
+                <div>
+                  <label className="block mb-1 text-[11px] text-gray-500">기본 접수 기간 (주)</label>
+                  <input
+                    type="number"
+                    min={1}
+                    className="w-full border border-gray-300 rounded-md px-2 py-1.5"
+                    defaultValue={selectedExam.registrationWeeks ?? 3}
+                  />
+                  <p className="mt-1 text-[11px] text-gray-400">예: 3주</p>
+                </div>
+                <div>
+                  <label className="block mb-1 text-[11px] text-gray-500">접수 마감 기준 (시험 전 일수)</label>
+                  <input
+                    type="number"
+                    min={0}
+                    className="w-full border border-gray-300 rounded-md px-2 py-1.5"
+                    defaultValue={selectedExam.registrationDeadlineOffsetDays ?? 10}
+                  />
+                  <p className="mt-1 text-[11px] text-gray-400">예: 시험 전 10일</p>
+                </div>
+                <div>
+                  <label className="block mb-1 text-[11px] text-gray-500">채점 완료 기한 (시험 후 일수)</label>
+                  <input
+                    type="number"
+                    min={0}
+                    className="w-full border border-gray-300 rounded-md px-2 py-1.5"
+                    defaultValue={selectedExam.scoringEndOffsetDays ?? 10}
+                  />
+                  <p className="mt-1 text-[11px] text-gray-400">예: 시험 후 10일</p>
+                </div>
+              </div>
             </div>
 
             {/* 3. 출제자 배정 / 상태 */}
@@ -569,12 +792,30 @@ export default function AdminExamsPage() {
                 <p className="text-xs text-gray-600 mb-2">
                   어떤 출제자에게 문제 출제를 맡길지 결정하고, 시험을 출시하거나 마감할 수 있습니다.
                 </p>
-                <div className="text-xs text-gray-700">
-                  <span className="font-semibold">현재 배정된 출제자: </span>
-                  {selectedExam.assignedTranslatorId
-                    ? MOCK_TRANSLATORS.find((t) => t.id === selectedExam.assignedTranslatorId)?.name ||
-                      '알 수 없음'
-                    : '배정되지 않음'}
+                <div className="text-xs text-gray-700 space-y-1">
+                  <div>
+                    <span className="font-semibold">현재 배정된 출제자: </span>
+                    {selectedExam.assignedTranslatorId
+                      ? MOCK_TRANSLATORS.find((t) => t.id === selectedExam.assignedTranslatorId)?.name ||
+                        '알 수 없음'
+                      : '배정되지 않음'}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-gray-700">관리 상태</span>
+                    <select
+                      className="border border-gray-300 rounded-md px-2 py-1 text-[11px] bg-white"
+                      defaultValue={selectedExam.managementStatus ?? '임시저장'}
+                    >
+                      <option value="임시저장">임시 저장</option>
+                      <option value="진행중">진행중</option>
+                      <option value="진행완료">진행완료</option>
+                      <option value="진행취소">진행취소</option>
+                      <option value="자동완료">자동완료</option>
+                      <option value="휴면완료">휴면완료</option>
+                      <option value="자동+휴면완료">자동 + 휴면완료</option>
+                      <option value="승인완료">승인완료</option>
+                    </select>
+                  </div>
                 </div>
               </div>
               <div className="flex gap-2 text-xs">
@@ -644,6 +885,9 @@ export default function AdminExamsPage() {
                           if (draft.status === '출제자전달완료') {
                             statusBadgeClass = 'bg-yellow-100 text-yellow-800 border-yellow-200';
                             statusLabel = '출제자에게 전달완료';
+                          } else if (draft.status === '출제중') {
+                            statusBadgeClass = 'bg-indigo-100 text-indigo-800 border-indigo-200';
+                            statusLabel = '출제중';
                           } else if (draft.status === '출제완료') {
                             statusBadgeClass = 'bg-blue-100 text-blue-800 border-blue-200';
                           } else if (draft.status === '최종승인') {
