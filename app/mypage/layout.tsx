@@ -18,7 +18,9 @@ export default function MypageLayout({
         </Suspense>
         <main className="flex-1 min-h-[calc(100vh-64px)] bg-white">
           <div className="max-w-[1120px] mx-auto p-8">
-            {children}
+            <Suspense fallback={null}>
+              {children}
+            </Suspense>
           </div>
         </main>
       </div>
