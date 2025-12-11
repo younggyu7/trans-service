@@ -104,7 +104,7 @@ export default function AuthorCompletedExamsPage() {
                           채점중
                         </span>
                       )}
-                      {status === 'draft' && status !== 'submitted' && (
+                      {status === 'draft' && (
                         <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-yellow-50 text-yellow-700 border border-yellow-200 text-[11px]">
                           임시저장
                         </span>
