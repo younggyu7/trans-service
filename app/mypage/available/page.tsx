@@ -18,6 +18,17 @@ interface ExamCard {
 // TODO: 이후에 실제 관리자/시험 데이터와 연동
 const mockExams: ExamCard[] = [
   {
+    id: 999,
+    title: 'test',
+    type: '프롬프트',
+    description: '프롬프트 시험 형식제출',
+    category: '프롬프트',
+    level: '2급',
+    instructor: '테스트',
+    duration: 5,
+    questionCount: 1,
+  },
+  {
     id: 1,
     title: '시험명이 나오는 영역',
     type: '번역',
@@ -89,9 +100,14 @@ export default function AvailableExamsPage() {
   const getExamLink = (exam: ExamCard) => {
     if (exam.type === '번역') {
       return `/mypage/exam/test?id=${exam.id}`;
-    } else {
-      return `/mypage/exam/prompt`;
     }
+
+    // 임시: "test" 시험만 신규 프롬프트 시험 형태로 라우팅
+    if (exam.id === 999) {
+      return `/mypage/exam/prompt_test`;
+    }
+
+    return `/mypage/exam/prompt`;
   };
 
   return (
