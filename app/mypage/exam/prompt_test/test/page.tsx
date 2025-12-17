@@ -130,8 +130,8 @@ export default function PromptExamTestEditPage() {
         promptReasons,
       },
       problem2: {
-        question: PROBLEM2_MOCK.question,
-        aiAnswer: PROBLEM2_MOCK.aiAnswer,
+        question: problem2Question,
+        aiAnswer: problem2AiAnswer,
         revisedAnswer,
         revisedReason,
       },
