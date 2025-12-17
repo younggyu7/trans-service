@@ -38,7 +38,9 @@ type PromptTestSettings = {
   aiUsed: string;
   aiUsedOption: string;
   aiUsedCustom: string;
-  promptDetails: string[]; // 1~5번 프롬프트 입력
+  promptDetails: string[]; // 문제1: 1~5번 프롬프트 입력
+  problem2Question: string; // 문제2: 어떤 질문을 했는지
+  problem2AiAnswer: string; // 문제2: AI 원본 답변
 };
 
 export default function PromptExamPage() {
@@ -51,9 +53,14 @@ export default function PromptExamPage() {
     aiUsedOption: '',
     aiUsedCustom: '',
     promptDetails: ['', '', '', '', ''],
+    problem2Question: '',
+    problem2AiAnswer: '',
   });
 
-  const handleChange = (key: keyof Omit<PromptTestSettings, 'promptDetails'>, value: string) => {
+  const handleChange = (
+    key: keyof Omit<PromptTestSettings, 'promptDetails'>,
+    value: string
+  ) => {
     setSettings(prev => ({ ...prev, [key]: value }));
   };
 
@@ -364,9 +371,9 @@ export default function PromptExamPage() {
           </div>
         </section>
 
-        {/* 3단계 프롬프트 입력 (1~5번) */}
+        {/* 3단계 문제1: 프롬프트 입력 (1~5번) */}
         <section className="bg-white border border-gray-200 rounded-lg p-6">
-          <h2 className="text-sm font-bold text-gray-900 mb-4">3단계 프롬프트 입력</h2>
+          <h2 className="text-sm font-bold text-gray-900 mb-4">3단계 문제1 입력</h2>
           <p className="text-xs text-gray-600 mb-4">
             문제 1~5에 대해, 수험자가 어떤 방식으로 프롬프트를 입력해야 하는지(가이드/조건/형식 등)를 작성하세요.
           </p>
@@ -383,6 +390,35 @@ export default function PromptExamPage() {
                 />
               </div>
             ))}
+          </div>
+        </section>
+
+        {/* 4단계 문제2: 질문 + AI 원본 답변 입력 */}
+        <section className="bg-white border border-gray-200 rounded-lg p-6">
+          <h2 className="text-sm font-bold text-gray-900 mb-4">4단계 문제2 입력</h2>
+          <p className="text-xs text-gray-600 mb-4">
+            문제2는 &quot;어떤 질문을 했을 때 AI 답변이 이렇게 왔다&quot;를 제시하고, 수험자가 AI 답변을 어떻게 개선할지 작성하는 유형입니다.
+          </p>
+
+          <div className="space-y-4">
+            <div>
+              <p className="text-sm font-semibold text-gray-700 mb-2">질문(내가 AI에게 한 질문)</p>
+              <textarea
+                value={settings.problem2Question}
+                onChange={(e) => handleChange('problem2Question', e.target.value)}
+                placeholder="예) 태국 여행 기획서를 작성해줘"
+                className="w-full h-24 p-3 border border-gray-300 rounded-md text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-gray-700 mb-2">AI 원본 답변</p>
+              <textarea
+                value={settings.problem2AiAnswer}
+                onChange={(e) => handleChange('problem2AiAnswer', e.target.value)}
+                placeholder="AI가 이렇게 답변했다(원본)를 붙여넣어 주세요."
+                className="w-full h-60 p-3 border border-gray-300 rounded-md text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
           </div>
         </section>
 

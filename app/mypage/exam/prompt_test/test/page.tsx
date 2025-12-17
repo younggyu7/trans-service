@@ -9,14 +9,24 @@ type PromptTestSettings = {
   wordCount?: string;
   aiUsed?: string;
   promptDetails?: string[];
+  problem2Question?: string;
+  problem2AiAnswer?: string;
   contentDetail?: string;
 };
 
 type PromptTestSubmission = {
   aiUsed: string;
-  prompts: string[];
-  promptReasons: string[]; // 문제(프롬프트)별 수정 사유(선택)
-  finalSummary: string; // 최종 정리
+  problem1: {
+    prompts: string[];
+    promptReasons: string[]; // 문제(프롬프트)별 수정 사유(선택)
+  };
+  problem2: {
+    question: string;
+    aiAnswer: string;
+    revisedAnswer: string;
+    revisedReason?: string; // 선택
+  };
+  finalSummary: string; // 최종 정리(전체)
   submittedAt: string;
 };
 
@@ -46,12 +56,23 @@ const normalizePrompts = (raw?: PromptTestSettings | null): string[] => {
 export default function PromptExamTestEditPage() {
   const router = useRouter();
   const [settings, setSettings] = useState<PromptTestSettings | null>(null);
+  const [selectedProblem, setSelectedProblem] = useState<1 | 2>(1);
+
+  // 문제1(프롬프트 1~5 수정)
   const [originalPrompts, setOriginalPrompts] = useState<string[]>(['', '', '', '', '']);
   const [prompts, setPrompts] = useState<string[]>(['', '', '', '', '']);
   const [promptReasons, setPromptReasons] = useState<string[]>(['', '', '', '', '']);
+
+  // 문제2(AI 답변 수정)
+  const [revisedAnswer, setRevisedAnswer] = useState('');
+  const [revisedReason, setRevisedReason] = useState('');
+
+  // 공통
   const [finalSummary, setFinalSummary] = useState('');
 
   const aiUsed = settings?.aiUsed ?? '';
+  const problem2Question = settings?.problem2Question ?? '';
+  const problem2AiAnswer = settings?.problem2AiAnswer ?? '';
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -65,15 +86,23 @@ export default function PromptExamTestEditPage() {
       setOriginalPrompts(normalized);
       setPrompts(normalized);
       setPromptReasons(['', '', '', '', '']);
+
+      setRevisedAnswer(parsed?.problem2AiAnswer ?? '');
+      setRevisedReason('');
+
       setFinalSummary('');
     } catch {
       // ignore
     }
   }, []);
 
-  const hasChanges = useMemo(() => {
+  const hasProblem1Changes = useMemo(() => {
     return prompts.some((p, i) => (p ?? '') !== (originalPrompts[i] ?? ''));
   }, [prompts, originalPrompts]);
+
+  const hasProblem2Changes = useMemo(() => {
+    return (revisedAnswer ?? '').trim() !== (problem2AiAnswer ?? '').trim();
+  }, [revisedAnswer, problem2AiAnswer]);
 
   const handlePromptChange = (index: number, value: string) => {
     setPrompts(prev => {
@@ -96,8 +125,16 @@ export default function PromptExamTestEditPage() {
 
     const draft: PromptTestSubmission = {
       aiUsed,
-      prompts,
-      promptReasons,
+      problem1: {
+        prompts,
+        promptReasons,
+      },
+      problem2: {
+        question: PROBLEM2_MOCK.question,
+        aiAnswer: PROBLEM2_MOCK.aiAnswer,
+        revisedAnswer,
+        revisedReason,
+      },
       finalSummary,
       submittedAt: new Date().toISOString(),
     };
@@ -114,8 +151,16 @@ export default function PromptExamTestEditPage() {
 
     const payload: PromptTestSubmission = {
       aiUsed,
-      prompts,
-      promptReasons,
+      problem1: {
+        prompts,
+        promptReasons,
+      },
+      problem2: {
+        question: problem2Question,
+        aiAnswer: problem2AiAnswer,
+        revisedAnswer,
+        revisedReason,
+      },
       finalSummary,
       submittedAt: new Date().toISOString(),
     };
@@ -139,7 +184,7 @@ export default function PromptExamTestEditPage() {
             <div>
               <p className="text-sm font-bold text-gray-900 mb-1">프롬프트 시험 제출</p>
               <p className="text-gray-600">
-                프롬프트 1~5를 직접 작성/수정하세요. 수정한 경우에만 각 프롬프트 옆에 사유를 작성하고, 하단에 최종 정리를 작성한 뒤 제출하세요.
+                문제1/문제2를 선택해서 답안을 작성하세요. 문제1은 프롬프트 1~5 수정 + 사유(선택), 문제2는 AI 답변을 어떻게 바꿀지 직접 작성합니다. 마지막에 최종 정리를 작성한 뒤 제출하세요.
               </p>
             </div>
             <div className="grid grid-cols-4 gap-6">
@@ -185,59 +230,134 @@ export default function PromptExamTestEditPage() {
       <div className="flex-1 overflow-hidden bg-gray-50">
         <div className="h-full px-6 py-6 overflow-hidden">
           <div className="h-full bg-white border border-gray-200 rounded-lg flex flex-col overflow-hidden">
-            <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
-              <p className="text-sm font-bold text-gray-900">프롬프트 1~5 (수정 + 사유)</p>
-              <p className="text-xs text-gray-500">{hasChanges ? '수정됨' : '원본 유지'}</p>
+            {/* Problem Tabs */}
+            <div className="px-4 py-2 border-b border-gray-200 flex gap-4 text-sm font-semibold">
+              <button
+                onClick={() => setSelectedProblem(1)}
+                className={`pb-2 border-b-2 ${
+                  selectedProblem === 1
+                    ? 'text-blue-600 border-blue-600'
+                    : 'text-gray-600 border-transparent hover:text-gray-900'
+                }`}
+              >
+                문제1
+              </button>
+              <button
+                onClick={() => setSelectedProblem(2)}
+                className={`pb-2 border-b-2 ${
+                  selectedProblem === 2
+                    ? 'text-blue-600 border-blue-600'
+                    : 'text-gray-600 border-transparent hover:text-gray-900'
+                }`}
+              >
+                문제2
+              </button>
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 space-y-6">
-              {prompts.map((value, i) => {
-                const changed = (value ?? '') !== (originalPrompts[i] ?? '');
-                return (
-                  <div key={i} className="border border-gray-200 rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <p className="text-sm font-semibold text-gray-900">프롬프트 {i + 1}</p>
-                      <span
-                        className={`text-xs px-2 py-0.5 rounded-full ${
-                          changed ? 'bg-blue-50 text-blue-700' : 'bg-gray-100 text-gray-600'
-                        }`}
-                      >
-                        {changed ? '수정됨' : '미수정'}
-                      </span>
+              {/* Problem 1 */}
+              {selectedProblem === 1 && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-bold text-gray-900">프롬프트 1~5 (수정 + 사유)</p>
+                    <p className="text-xs text-gray-500">{hasProblem1Changes ? '수정됨' : '원본 유지'}</p>
+                  </div>
+
+                  {prompts.map((value, i) => {
+                    const changed = (value ?? '') !== (originalPrompts[i] ?? '');
+                    return (
+                      <div key={i} className="border border-gray-200 rounded-lg p-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <p className="text-sm font-semibold text-gray-900">프롬프트 {i + 1}</p>
+                          <span
+                            className={`text-xs px-2 py-0.5 rounded-full ${
+                              changed ? 'bg-blue-50 text-blue-700' : 'bg-gray-100 text-gray-600'
+                            }`}
+                          >
+                            {changed ? '수정됨' : '미수정'}
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <p className="text-xs font-semibold text-gray-700 mb-2">프롬프트</p>
+                            <textarea
+                              value={value}
+                              onChange={(e) => handlePromptChange(i, e.target.value)}
+                              placeholder={`프롬프트 ${i + 1}를 입력하거나 수정하세요.`}
+                              className="w-full h-28 p-3 border border-gray-300 rounded-md text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+
+                          <div>
+                            <p className="text-xs font-semibold text-gray-700 mb-2">수정 사유 (선택)</p>
+                            <textarea
+                              value={promptReasons[i] ?? ''}
+                              onChange={(e) => handleReasonChange(i, e.target.value)}
+                              placeholder={changed ? '왜 수정했는지 자유롭게 작성하세요.' : '수정하지 않았다면 비워도 됩니다.'}
+                              className="w-full h-28 p-3 border border-gray-300 rounded-md text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Problem 2 */}
+              {selectedProblem === 2 && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-bold text-gray-900">AI 답변 수정</p>
+                    <p className="text-xs text-gray-500">{hasProblem2Changes ? '수정됨' : '원본 유지'}</p>
+                  </div>
+
+                  <div className="border border-gray-200 rounded-lg p-4">
+                    <p className="text-xs font-semibold text-gray-700 mb-2">질문</p>
+                    <div className="p-3 bg-gray-50 border border-gray-200 rounded-md text-sm text-gray-800 whitespace-pre-wrap">
+                      {problem2Question || '문제2 질문이 입력되지 않았습니다.'}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="border border-gray-200 rounded-lg p-4">
+                      <p className="text-xs font-semibold text-gray-700 mb-2">AI 답변 (원본)</p>
+                      <div className="p-3 bg-gray-50 border border-gray-200 rounded-md text-sm text-gray-800 whitespace-pre-wrap h-80 overflow-y-auto">
+                        {problem2AiAnswer || '문제2 AI 원본 답변이 입력되지 않았습니다.'}
+                      </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-xs font-semibold text-gray-700 mb-2">프롬프트</p>
-                        <textarea
-                          value={value}
-                          onChange={(e) => handlePromptChange(i, e.target.value)}
-                          placeholder={`프롬프트 ${i + 1}를 입력하거나 수정하세요.`}
-                          className="w-full h-28 p-3 border border-gray-300 rounded-md text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                      </div>
-
-                      <div>
+                    <div className="border border-gray-200 rounded-lg p-4">
+                      <p className="text-xs font-semibold text-gray-700 mb-2">AI 답변 (수정본)</p>
+                      <textarea
+                        value={revisedAnswer}
+                        onChange={(e) => setRevisedAnswer(e.target.value)}
+                        className="w-full h-80 p-3 border border-gray-300 rounded-md text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="원본 AI 답변을 어떻게 바꿀지 작성하세요."
+                      />
+                      <div className="mt-3">
                         <p className="text-xs font-semibold text-gray-700 mb-2">수정 사유 (선택)</p>
                         <textarea
-                          value={promptReasons[i] ?? ''}
-                          onChange={(e) => handleReasonChange(i, e.target.value)}
-                          placeholder={changed ? '왜 수정했는지 자유롭게 작성하세요.' : '수정하지 않았다면 비워도 됩니다.'}
-                          className="w-full h-28 p-3 border border-gray-300 rounded-md text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          value={revisedReason}
+                          onChange={(e) => setRevisedReason(e.target.value)}
+                          className="w-full h-24 p-3 border border-gray-300 rounded-md text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="왜 이렇게 바꿨는지 자유롭게 작성하세요."
                         />
                       </div>
                     </div>
                   </div>
-                );
-              })}
+                </div>
+              )}
 
+              {/* Final summary (global) */}
               <div className="border border-gray-200 rounded-lg p-4">
                 <div className="flex items-center justify-between mb-2">
                   <p className="text-sm font-semibold text-gray-900">최종 정리</p>
                   <span className="text-xs text-gray-500">글자수: {finalSummary.length}</span>
                 </div>
                 <p className="text-xs text-gray-500 mb-3">
-                  프롬프트 설계/수정의 핵심 포인트를 요약해서 작성하세요.
+                  문제1/문제2에서의 설계/수정 핵심 포인트를 요약해서 작성하세요.
                 </p>
                 <textarea
                   value={finalSummary}
@@ -251,6 +371,8 @@ export default function PromptExamTestEditPage() {
                     onClick={() => {
                       setPrompts(originalPrompts);
                       setPromptReasons(['', '', '', '', '']);
+                      setRevisedAnswer(problem2AiAnswer);
+                      setRevisedReason('');
                       setFinalSummary('');
                     }}
                     className="px-3 py-1 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 text-xs"
