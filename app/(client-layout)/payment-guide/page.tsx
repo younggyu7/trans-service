@@ -345,7 +345,7 @@ export default function PaymentGuidePage() {
               <div className="w-1/3 bg-gray-50 flex flex-col">
                 <div className="p-4 border-b border-gray-200 bg-white">
                   <h3 className="font-semibold text-gray-900">소 카테고리</h3>
-                  {selectedMidCategory && prices.category_mid?.[selectedLargeCategory || '']?.[selectedMidCategory] && (
+                  {selectedMidCategory && prices.clientPrices.category_mid?.[selectedLargeCategory || '']?.[selectedMidCategory] && (
                     <p className="text-xs text-gray-500 mt-1">중 카테고리 선택됨</p>
                   )}
                 </div>
