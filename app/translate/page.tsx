@@ -12,7 +12,7 @@ export default function TranslatePage() {
       </div>
 
       {/* 서비스 카드 */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
         {/* 번역 의뢰하기 */}
         <Link href="/translate/client/request/new">
           <div className="block h-full p-8 bg-white rounded-xl shadow-lg hover:shadow-xl transition-all hover:scale-105 cursor-pointer border-2 border-transparent hover:border-blue-400">
@@ -51,6 +51,20 @@ export default function TranslatePage() {
             </p>
             <div className="flex items-center justify-center text-purple-600 font-semibold">
               번역 작업 보기 →
+            </div>
+          </div>
+        </Link>
+
+        {/* 메타번역 */}
+        <Link href="/translate/meta/new">
+          <div className="block h-full p-8 bg-white rounded-xl shadow-lg hover:shadow-xl transition-all hover:scale-105 cursor-pointer border-2 border-transparent hover:border-orange-400">
+            <div className="text-6xl mb-6 text-center">🔮</div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-3 text-center">메타번역</h2>
+            <p className="text-gray-600 text-center mb-6">
+              AI와 에디터를 활용하여 문서를 작성하고 번역합니다.
+            </p>
+            <div className="flex items-center justify-center text-orange-600 font-semibold">
+              메타번역 시작 →
             </div>
           </div>
         </Link>
