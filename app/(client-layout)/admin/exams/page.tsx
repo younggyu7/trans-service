@@ -891,7 +891,7 @@ export default function AdminExamsPage() {
                               </>
                             ) : (
                               <div className="text-[11px] text-gray-400 text-center py-2 border border-dashed border-gray-200 rounded-md">
-                                소 평가 기준이 없습니다. "+ 추가" 버튼을 클릭하여 추가하세요.
+                                소 평가 기준이 없습니다. &quot;+ 추가&quot; 버튼을 클릭하여 추가하세요.
                               </div>
                             )}
                           </div>

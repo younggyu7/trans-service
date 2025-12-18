@@ -961,7 +961,7 @@ export default function AdminPricingPage() {
                       ) : (
                         <div className="text-sm text-gray-500 text-center py-8">
                           소 카테고리가 없습니다.<br />
-                          위의 "+ 추가" 버튼을 클릭하여 추가하세요.
+                          위의 &quot;+ 추가&quot; 버튼을 클릭하여 추가하세요.
                         </div>
                       )}
                     </div>

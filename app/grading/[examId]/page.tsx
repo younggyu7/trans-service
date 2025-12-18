@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { getDrafts } from '@/lib/examDraftStore';
 
 interface GradingQuestion {
@@ -48,6 +48,11 @@ export default function ExamGradingPage() {
   const exam = drafts.find((d) => d.id === examId);
 
   const [currentCandidateIndex, setCurrentCandidateIndex] = useState(0);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [graderNotes, setGraderNotes] = useState<Record<string, string>>({});
+  const [questionScores, setQuestionScores] = useState<Record<string, { isGraded: boolean; score: number }>>({});
+  const [evaluationScores, setEvaluationScores] = useState<Record<string, Record<string, number>>>({});
+  const [showCandidateListModal, setShowCandidateListModal] = useState(false);
 
   const questions: GradingQuestion[] = useMemo(() => {
     const count = exam?.questionCount ?? 3;
@@ -60,83 +65,48 @@ export default function ExamGradingPage() {
     }));
   }, [exam?.questionCount]);
 
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [graderNotes, setGraderNotes] = useState<Record<string, string>>({});
-  const [questionScores, setQuestionScores] = useState<Record<string, { isGraded: boolean; score: number }>>({});
-  const [evaluationScores, setEvaluationScores] = useState<Record<string, Record<string, number>>>({});
-  const [filterStatus, setFilterStatus] = useState<'all' | 'needsGrading' | 'reviewRequested'>('all');
-  const [showCandidateListModal, setShowCandidateListModal] = useState(false);
-
   // Mock 평가 기준 데이터 (실제로는 exam.evaluationCriteria에서 가져와야 함)
-  const evaluationCriteria: EvaluationCriteria[] = exam?.evaluationCriteria ?? [
-    {
-      id: 'ec-1',
-      name: '정확성',
-      ratio: 25,
-      subCriteria: [
-        { id: 'sc-1-1', definition: '의미 전달의 정확성', factor: '의미 일치도', ratio: 10 },
-        { id: 'sc-1-2', definition: '문법적 정확성', factor: '문법 오류', ratio: 10 },
-        { id: 'sc-1-3', definition: '용어 사용의 정확성', factor: '전문 용어', ratio: 5 },
-      ],
-    },
-    {
-      id: 'ec-2',
-      name: '적절성',
-      ratio: 25,
-      subCriteria: [
-        { id: 'sc-2-1', definition: '문맥 적합성', factor: '상황 적합', ratio: 15 },
-        { id: 'sc-2-2', definition: '어조의 적절성', factor: '어조 일치', ratio: 10 },
-      ],
-    },
-    {
-      id: 'ec-3',
-      name: '효율성',
-      ratio: 25,
-      subCriteria: [
-        { id: 'sc-3-1', definition: '표현의 간결성', factor: '불필요한 표현', ratio: 15 },
-        { id: 'sc-3-2', definition: '가독성', factor: '문장 구조', ratio: 10 },
-      ],
-    },
-    {
-      id: 'ec-4',
-      name: '윤리',
-      ratio: 25,
-      subCriteria: [
-        { id: 'sc-4-1', definition: '저작권 준수', factor: '출처 표기', ratio: 15 },
-        { id: 'sc-4-2', definition: '편향성 없음', factor: '객관성', ratio: 10 },
-      ],
-    },
-  ];
-
-  if (!exam) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 text-sm text-gray-600">
-        해당 시험 정보를 찾을 수 없습니다.
-      </div>
-    );
-  }
-
-  const currentQuestion = questions[currentQuestionIndex];
-  const currentCandidate = MOCK_CANDIDATES[currentCandidateIndex];
-  const key = `${currentCandidate.name}-${currentQuestion.id}`;
-  const note = graderNotes[key] ?? '';
-  const questionScore = questionScores[key] ?? { isGraded: false, score: 0 };
-  const currentEvaluationScores = evaluationScores[key] ?? {};
-
-  // 현재 응시자의 최종 점수 계산
-  const finalScore = useMemo(() => {
-    let totalScore = 0;
-    let totalPoints = 0;
-    questions.forEach((q) => {
-      const qKey = `${currentCandidate.name}-${q.id}`;
-      const qScore = questionScores[qKey];
-      totalPoints += q.points;
-      if (qScore?.isGraded) {
-        totalScore += qScore.score;
-      }
-    });
-    return { score: totalScore, total: totalPoints };
-  }, [questionScores, currentCandidate.name, questions]);
+  const evaluationCriteria: EvaluationCriteria[] = useMemo(() => {
+    return exam?.evaluationCriteria ?? [
+      {
+        id: 'ec-1',
+        name: '정확성',
+        ratio: 25,
+        subCriteria: [
+          { id: 'sc-1-1', definition: '의미 전달의 정확성', factor: '의미 일치도', ratio: 10 },
+          { id: 'sc-1-2', definition: '문법적 정확성', factor: '문법 오류', ratio: 10 },
+          { id: 'sc-1-3', definition: '용어 사용의 정확성', factor: '전문 용어', ratio: 5 },
+        ],
+      },
+      {
+        id: 'ec-2',
+        name: '적절성',
+        ratio: 25,
+        subCriteria: [
+          { id: 'sc-2-1', definition: '문맥 적합성', factor: '상황 적합', ratio: 15 },
+          { id: 'sc-2-2', definition: '어조의 적절성', factor: '어조 일치', ratio: 10 },
+        ],
+      },
+      {
+        id: 'ec-3',
+        name: '효율성',
+        ratio: 25,
+        subCriteria: [
+          { id: 'sc-3-1', definition: '표현의 간결성', factor: '불필요한 표현', ratio: 15 },
+          { id: 'sc-3-2', definition: '가독성', factor: '문장 구조', ratio: 10 },
+        ],
+      },
+      {
+        id: 'ec-4',
+        name: '윤리',
+        ratio: 25,
+        subCriteria: [
+          { id: 'sc-4-1', definition: '저작권 준수', factor: '출처 표기', ratio: 15 },
+          { id: 'sc-4-2', definition: '편향성 없음', factor: '객관성', ratio: 10 },
+        ],
+      },
+    ];
+  }, [exam?.evaluationCriteria]);
 
   // 자동채점 결과 통계 계산
   const autoGradingStats = useMemo(() => {
@@ -146,18 +116,6 @@ export default function ExamGradingPage() {
     const reviewRequested = MOCK_CANDIDATES.filter((c) => c.reviewRequested).length;
     return { failed, needsGrading, passed, reviewRequested };
   }, []);
-
-  // 필터링된 응시자 목록
-  const filteredCandidates = useMemo(() => {
-    if (filterStatus === 'all') {
-      return MOCK_CANDIDATES;
-    } else if (filterStatus === 'needsGrading') {
-      return MOCK_CANDIDATES.filter((c) => c.status === '채점필요');
-    } else if (filterStatus === 'reviewRequested') {
-      return MOCK_CANDIDATES.filter((c) => c.reviewRequested);
-    }
-    return MOCK_CANDIDATES;
-  }, [filterStatus]);
 
   // 채점 필요 인원과 완료된 채점 인원 계산
   const gradingStats = useMemo(() => {
@@ -192,6 +150,36 @@ export default function ExamGradingPage() {
     setCurrentCandidateIndex(needsGradingCandidates[nextIdx].idx);
     setCurrentQuestionIndex(0); // 첫 번째 문제로 이동
   };
+
+  if (!exam) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 text-sm text-gray-600">
+        해당 시험 정보를 찾을 수 없습니다.
+      </div>
+    );
+  }
+
+  const currentQuestion = questions[currentQuestionIndex];
+  const currentCandidate = MOCK_CANDIDATES[currentCandidateIndex];
+  const key = `${currentCandidate.name}-${currentQuestion.id}`;
+  const note = graderNotes[key] ?? '';
+  const questionScore = questionScores[key] ?? { isGraded: false, score: 0 };
+  const currentEvaluationScores = evaluationScores[key] ?? {};
+
+  // 현재 응시자의 최종 점수 계산
+  const finalScore = useMemo(() => {
+    let totalScore = 0;
+    let totalPoints = 0;
+    questions.forEach((q) => {
+      const qKey = `${currentCandidate.name}-${q.id}`;
+      const qScore = questionScores[qKey];
+      totalPoints += q.points;
+      if (qScore?.isGraded) {
+        totalScore += qScore.score;
+      }
+    });
+    return { score: totalScore, total: totalPoints };
+  }, [questionScores, currentCandidate.name, questions]);
 
   return (
     <div className="flex flex-col h-screen bg-gray-50 text-sm w-full">
@@ -452,7 +440,6 @@ export default function ExamGradingPage() {
               </div>
               <div className="border border-gray-200 rounded-md p-2 h-48 overflow-y-auto space-y-3">
                 {evaluationCriteria.map((criterion) => {
-                  const maxScore = (criterion.ratio / 100) * currentQuestion.points;
                   return (
                     <div key={criterion.id} className="border-b border-gray-100 pb-2 last:border-b-0">
                       <div className="font-semibold text-[10px] text-gray-800 mb-1">

@@ -212,6 +212,7 @@ export function PriceProvider({ children }: { children: React.ReactNode }) {
       let finalPrices = { ...DEFAULT_PRICES };
       
       if (stored) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const parsed = JSON.parse(stored) as any;
         
         // 기존 형식의 필드가 있으면 새 구조로 마이그레이션
@@ -342,6 +343,7 @@ export function PriceProvider({ children }: { children: React.ReactNode }) {
                 'category_mid_field_cosmetics', 'category_mid_field_semiconductor', 'category_mid_field_defense',
                 'category_mid_field_news', 'category_mid_field_politics', 'category_mid_field_economy',
                 'category_mid_field_literature', 'category_mid_field_engineering'].includes(key)) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             (finalPrices as any)[key] = parsed[key];
           }
         });
@@ -449,12 +451,12 @@ export function PriceProvider({ children }: { children: React.ReactNode }) {
         };
       }
       
-      // 다른 필드들은 일반 병합
-      Object.keys(newPrices).forEach(key => {
-        if (key !== 'clientPrices' && key !== 'translatorPrices') {
-          (next as any)[key] = (newPrices as any)[key];
-        }
-      });
+          // 다른 필드들은 일반 병합
+          Object.keys(newPrices).forEach(key => {
+            if (key !== 'clientPrices' && key !== 'translatorPrices') {
+              (next as Record<string, unknown>)[key] = (newPrices as Record<string, unknown>)[key];
+            }
+          });
       
       persist(next);
       return next;
