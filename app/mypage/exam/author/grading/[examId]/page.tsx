@@ -48,7 +48,7 @@ export default function ExamGradingPage() {
   const note = graderNotes[key] ?? '';
 
   return (
-    <div className="flex h-screen bg-gray-50 text-sm">
+    <div className="flex h-screen bg-gray-50 text-sm w-full">
       {/* 좌측: 응시자 리스트 + 문제 목록 */}
       <aside className="w-72 bg-white border-r border-gray-200 flex flex-col">
         <div className="p-4 border-b border-gray-200 space-y-2">

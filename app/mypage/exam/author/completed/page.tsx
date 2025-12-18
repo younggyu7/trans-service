@@ -229,8 +229,12 @@ export default function AuthorCompletedExamsPage() {
                           onClick={() => {
                             setGradingStatus((prev) => ({ ...prev, [selected.id]: 'grading' }));
                             setView('grading');
-                            // 채점 전용 화면으로 이동
-                            window.location.href = `/mypage/exam/author/grading/${selected.id}`;
+                            // 채점 전용 화면을 새 창으로 열기 (사이드바/헤더 없는 전체화면)
+                            window.open(
+                              `/grading/${selected.id}`,
+                              '_blank',
+                              'width=1920,height=1080,resizable=yes,scrollbars=yes'
+                            );
                           }}
                         >
                           채점하기
@@ -240,10 +244,10 @@ export default function AuthorCompletedExamsPage() {
 
                     if (status === 'grading' || status === 'draft') {
                       return (
-                        <>
+                        <div className="flex items-center gap-2">
                           <button
                             type="button"
-                            className="px-3 py-1.5 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50"
+                            className="px-3 py-1.5 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50 whitespace-nowrap"
                             onClick={() => {
                               setGradingStatus((prev) => ({ ...prev, [selected.id]: 'draft' }));
                               alert('채점 내용이 임시 저장되었습니다. (mock)');
@@ -253,7 +257,21 @@ export default function AuthorCompletedExamsPage() {
                           </button>
                           <button
                             type="button"
-                            className="px-3 py-1.5 rounded-md bg-purple-600 text-white font-semibold hover:bg-purple-700"
+                            className="px-3 py-1.5 rounded-md bg-indigo-600 text-white font-semibold hover:bg-indigo-700 whitespace-nowrap"
+                            onClick={() => {
+                              // 채점 전용 화면을 새 창으로 열기 (사이드바/헤더 없는 전체화면)
+                              window.open(
+                                `/grading/${selected.id}`,
+                                '_blank',
+                                'width=1920,height=1080,resizable=yes,scrollbars=yes'
+                              );
+                            }}
+                          >
+                            채점화면가기
+                          </button>
+                          <button
+                            type="button"
+                            className="px-3 py-1.5 rounded-md bg-purple-600 text-white font-semibold hover:bg-purple-700 whitespace-nowrap"
                             onClick={() => {
                               setGradingStatus((prev) => ({ ...prev, [selected.id]: 'submitted' }));
                               setView('graded');
@@ -262,7 +280,7 @@ export default function AuthorCompletedExamsPage() {
                           >
                             채점 완료하기
                           </button>
-                        </>
+                        </div>
                       );
                     }
 

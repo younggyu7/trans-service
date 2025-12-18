@@ -14,6 +14,18 @@ interface QuestionTypeSetting {
   difficultyLow?: number;
 }
 
+interface EvaluationCriteria {
+  id: string;
+  name: string; // 대 평가 기준 이름 (예: 정확성, 적절성, 효율성, 윤리)
+  ratio: number; // 비율 (%)
+  subCriteria: Array<{
+    id: string;
+    definition: string; // 정의
+    factor: string; // 요인
+    ratio: number; // 소 평가 기준 비율 (%)
+  }>;
+}
+
 interface ExamTemplate {
   id: string;
   name: string;
@@ -26,6 +38,19 @@ interface ExamTemplate {
   durationMinutes: number;
   status: 'draft' | 'ready' | 'open' | 'closed'; // 템플릿 자체 상태 (작성 중/출시 대기 등)
   assignedTranslatorId?: string; // 배정된 출제자 ID
+
+  // 사용 에디터 선택
+  editorType?: '에디터' | '영상 에디터' | '코딩 에디터' | '번역 에디터' | '문서 에디터' | '프롬프트 에디터';
+  // 응시생
+  targetCandidate?: '개인' | '그룹' | '개인/그룹';
+  // 시험등급
+  examGrade?: string;
+  // 시험 교시
+  examPeriod?: number; // 1~8교시
+
+  // 채점 비율
+  autoGradingRatio?: number; // 자동채점 비율 (%)
+  humanGradingRatio?: number; // 휴먼채점 비율 (%)
 
   // 전체 문항 기준 상/중/하 난이도 비율(%)
   overallDifficultyHigh?: number;
@@ -43,6 +68,9 @@ interface ExamTemplate {
     | '전체문자수';
   allowedSearchCount?: number; // 검색 허용 횟수 (공통영역 등에서 사용)
   fileType?: string; // 출제 파일 종류 (PDF, DOCX 등)
+  
+  // 대/소 평가 기준 구조
+  evaluationCriteria?: EvaluationCriteria[];
 
   // 일정 & 조건 요약 (실제 저장 구조는 이후 확장)
   examDate?: string;
@@ -197,6 +225,16 @@ export default function AdminExamsPage() {
       ? CATEGORY_TREE[mainCategory]?.[middleCategory] ?? []
       : [];
 
+  // 평가 기준 상태
+  const [evaluationCriteria, setEvaluationCriteria] = useState<EvaluationCriteria[]>(
+    selectedExam.evaluationCriteria ?? [
+      { id: 'ec-1', name: '정확성', ratio: 25, subCriteria: [] },
+      { id: 'ec-2', name: '적절성', ratio: 25, subCriteria: [] },
+      { id: 'ec-3', name: '효율성', ratio: 25, subCriteria: [] },
+      { id: 'ec-4', name: '윤리', ratio: 25, subCriteria: [] },
+    ],
+  );
+
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white border-b border-gray-200 sticky top-0 z-40">
@@ -280,7 +318,7 @@ export default function AdminExamsPage() {
                     {/* 1. 기본 정보 */}
             <div className="bg-white rounded-lg border border-gray-200 p-5">
               <h2 className="text-sm font-semibold text-gray-900 mb-4">1. 기본 정보</h2>
-              <div className="grid grid-cols-2 gap-4 text-sm mb-4">
+              <div className="grid grid-cols-3 gap-4 text-sm mb-4">
                 <div>
                   <label className="block text-xs text-gray-600 mb-1">시험명</label>
                   <input
@@ -296,6 +334,19 @@ export default function AdminExamsPage() {
                   >
                     <option value="번역">번역</option>
                     <option value="프롬프트">프롬프트</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-600 mb-1">시험 교시 선택하기</label>
+                  <select
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white"
+                    defaultValue={selectedExam.examPeriod ?? 1}
+                  >
+                    {Array.from({ length: 8 }, (_, i) => i + 1).map((period) => (
+                      <option key={period} value={period}>
+                        {period}교시
+                      </option>
+                    ))}
                   </select>
                 </div>
                 {/* 카테고리 선택 (대/중/소 한 줄) */}
@@ -364,6 +415,96 @@ export default function AdminExamsPage() {
                       ))}
                     </select>
                   </div>
+                </div>
+
+                {/* 사용에디터 선택, 응시생, 시험등급 */}
+                <div className="grid grid-cols-3 gap-4 text-sm mt-4">
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-1">사용에디터 선택</label>
+                    <select
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white"
+                      defaultValue={selectedExam.editorType ?? '에디터'}
+                    >
+                      <option value="에디터">에디터</option>
+                      <option value="영상 에디터">영상 에디터</option>
+                      <option value="코딩 에디터">코딩 에디터</option>
+                      <option value="번역 에디터">번역 에디터</option>
+                      <option value="문서 에디터">문서 에디터</option>
+                      <option value="프롬프트 에디터">프롬프트 에디터</option>
+                      <option value="타사: 멤소스">타사: 멤소스</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-1">응시생</label>
+                    <select
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white"
+                      defaultValue={selectedExam.targetCandidate ?? '개인'}
+                    >
+                      <option value="개인">개인</option>
+                      <option value="그룹">그룹</option>
+                      <option value="개인/그룹">개인/그룹</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-1">시험등급</label>
+                    <select
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white"
+                      defaultValue={selectedExam.examGrade ?? ''}
+                    >
+                      <option value="">선택하세요</option>
+                      <optgroup label="전문">
+                        <option value="전문 1급">전문 1급</option>
+                        <option value="전문 2급">전문 2급</option>
+                      </optgroup>
+                      <optgroup label="일반">
+                        <option value="일반 1급">일반 1급</option>
+                        <option value="일반 2급">일반 2급</option>
+                        <option value="일반 3급">일반 3급</option>
+                      </optgroup>
+                      <optgroup label="교육급수">
+                        <option value="교육급수 1급">교육급수 1급</option>
+                        <option value="교육급수 2급">교육급수 2급</option>
+                        <option value="교육급수 3급">교육급수 3급</option>
+                        <option value="교육급수 4급">교육급수 4급</option>
+                        <option value="교육급수 5급">교육급수 5급</option>
+                        <option value="교육급수 6급">교육급수 6급</option>
+                        <option value="교육급수 7급">교육급수 7급</option>
+                        <option value="교육급수 8급">교육급수 8급</option>
+                      </optgroup>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* 자동채점 / 휴먼채점 비율 */}
+              <div className="mt-4 border-t border-gray-100 pt-4 space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <h3 className="text-xs font-semibold text-gray-900">채점 비율 설정</h3>
+                </div>
+                <div className="flex items-center gap-4 text-xs text-gray-700">
+                  <div className="flex items-center gap-2">
+                    <label className="text-[11px] text-gray-600">자동채점</label>
+                    <input
+                      type="number"
+                      min={0}
+                      max={100}
+                      className="w-16 border border-gray-300 rounded-md px-2 py-1 text-xs"
+                      defaultValue={selectedExam.autoGradingRatio ?? 80}
+                    />
+                    <span className="text-[11px] text-gray-500">%</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <label className="text-[11px] text-gray-600">휴먼채점</label>
+                    <input
+                      type="number"
+                      min={0}
+                      max={100}
+                      className="w-16 border border-gray-300 rounded-md px-2 py-1 text-xs"
+                      defaultValue={selectedExam.humanGradingRatio ?? 20}
+                    />
+                    <span className="text-[11px] text-gray-500">%</span>
+                  </div>
+                  <span className="text-[11px] text-gray-400">(합계 100% 기준으로 설정)</span>
                 </div>
               </div>
 
@@ -579,23 +720,196 @@ export default function AdminExamsPage() {
                 {/* 평가 기준 / 파일 종류 */}
                 <div className="mt-4 border-t border-gray-100 pt-4 space-y-3 text-xs text-gray-700">
                   <h3 className="text-xs font-semibold text-gray-900">평가 기준 · 파일 종류</h3>
-                  <div className="grid grid-cols-3 gap-3">
-                    <div>
-                      <label className="block mb-1 text-[11px] text-gray-500">평가 기준</label>
-                      <select
-                        className="w-full border border-gray-300 rounded-md px-2 py-1 bg-white"
-                        defaultValue={selectedExam.evaluationMetric ?? ''}
+                  
+                  {/* 대 평가 기준 설정 */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-[11px] font-semibold text-gray-800">대 평가 기준</h4>
+                      <button
+                        type="button"
+                        className="px-2 py-1 rounded-md border border-gray-300 text-[11px] text-gray-700 hover:bg-gray-50"
+                        onClick={() => {
+                          const newId = `ec-${Date.now()}`;
+                          setEvaluationCriteria((prev) => [
+                            ...prev,
+                            { id: newId, name: '', ratio: 0, subCriteria: [] },
+                          ]);
+                        }}
                       >
-                        <option value="">선택하세요</option>
-                        <option value="단어수">단어수</option>
-                        <option value="검색허용횟수">검색 허용횟수</option>
-                        <option value="문장부호수">문장부호수</option>
-                        <option value="수정단어수">수정 단어수</option>
-                        <option value="전체문장수">전체 문장수</option>
-                        <option value="단계">단계</option>
-                        <option value="전체문자수">전체 문자수</option>
-                      </select>
+                        + 대 평가 기준 추가
+                      </button>
                     </div>
+                    
+                    <div className="space-y-2">
+                      {evaluationCriteria.map((criteria, idx) => (
+                        <div key={criteria.id} className="border border-gray-200 rounded-md p-3 bg-gray-50">
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="text-[11px] text-gray-500 w-8">#{idx + 1}</span>
+                            <input
+                              type="text"
+                              placeholder="대 평가 기준 이름 (예: 정확성, 적절성, 효율성, 윤리)"
+                              className="flex-1 border border-gray-300 rounded-md px-2 py-1 text-xs"
+                              value={criteria.name}
+                              onChange={(e) => {
+                                const next = [...evaluationCriteria];
+                                next[idx] = { ...next[idx], name: e.target.value };
+                                setEvaluationCriteria(next);
+                              }}
+                            />
+                            <div className="flex items-center gap-1">
+                              <label className="text-[11px] text-gray-600">비율:</label>
+                              <input
+                                type="number"
+                                min={0}
+                                max={100}
+                                className="w-16 border border-gray-300 rounded-md px-2 py-1 text-xs"
+                                value={criteria.ratio}
+                                onChange={(e) => {
+                                  const value = Number(e.target.value) || 0;
+                                  const next = [...evaluationCriteria];
+                                  next[idx] = { ...next[idx], ratio: value };
+                                  setEvaluationCriteria(next);
+                                }}
+                              />
+                              <span className="text-[11px] text-gray-500">%</span>
+                            </div>
+                            <button
+                              type="button"
+                              className="px-2 py-1 text-[11px] text-red-600 hover:text-red-800"
+                              onClick={() => {
+                                setEvaluationCriteria((prev) => prev.filter((_, i) => i !== idx));
+                              }}
+                            >
+                              삭제
+                            </button>
+                          </div>
+                          
+                          {/* 소 평가 기준 (세부 체점지표) */}
+                          <div className="ml-8 mt-2">
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-[11px] font-medium text-gray-700">소 평가 기준 (세부 체점지표)</span>
+                              <button
+                                type="button"
+                                className="px-2 py-0.5 rounded border border-gray-300 text-[10px] text-gray-600 hover:bg-gray-100"
+                                onClick={() => {
+                                  const newSubId = `sub-${Date.now()}`;
+                                  const next = [...evaluationCriteria];
+                                  next[idx] = {
+                                    ...next[idx],
+                                    subCriteria: [
+                                      ...next[idx].subCriteria,
+                                      { id: newSubId, definition: '', factor: '', ratio: 0 },
+                                    ],
+                                  };
+                                  setEvaluationCriteria(next);
+                                }}
+                              >
+                                + 추가
+                              </button>
+                            </div>
+                            {criteria.subCriteria.length > 0 ? (
+                              <>
+                                <div className="grid grid-cols-5 gap-2">
+                                  {criteria.subCriteria.map((sub, subIdx) => {
+                                    const subTotalRatio = criteria.subCriteria.reduce((sum, s) => sum + (s.ratio || 0), 0);
+                                    const isOverLimit = subTotalRatio > criteria.ratio;
+                                    return (
+                                      <div key={sub.id} className="border border-gray-200 rounded-md p-1.5 bg-white">
+                                        <div className="flex items-center justify-between mb-1">
+                                          <span className="text-[9px] text-gray-500">#{subIdx + 1}</span>
+                                          <button
+                                            type="button"
+                                            className="px-1 py-0.5 text-[9px] text-red-600 hover:text-red-800"
+                                            onClick={() => {
+                                              const next = [...evaluationCriteria];
+                                              next[idx].subCriteria = next[idx].subCriteria.filter((_, i) => i !== subIdx);
+                                              setEvaluationCriteria(next);
+                                            }}
+                                          >
+                                            삭제
+                                          </button>
+                                        </div>
+                                        <div className="space-y-1">
+                                          <div>
+                                            <label className="block text-[9px] text-gray-600 mb-0.5">정의</label>
+                                            <input
+                                              type="text"
+                                              placeholder="정의"
+                                              className="w-full border border-gray-300 rounded-md px-1.5 py-0.5 text-[10px]"
+                                              value={sub.definition}
+                                              onChange={(e) => {
+                                                const next = [...evaluationCriteria];
+                                                next[idx].subCriteria[subIdx] = { ...next[idx].subCriteria[subIdx], definition: e.target.value };
+                                                setEvaluationCriteria(next);
+                                              }}
+                                            />
+                                          </div>
+                                          <div>
+                                            <label className="block text-[9px] text-gray-600 mb-0.5">요인</label>
+                                            <input
+                                              type="text"
+                                              placeholder="요인"
+                                              className="w-full border border-gray-300 rounded-md px-1.5 py-0.5 text-[10px]"
+                                              value={sub.factor}
+                                              onChange={(e) => {
+                                                const next = [...evaluationCriteria];
+                                                next[idx].subCriteria[subIdx] = { ...next[idx].subCriteria[subIdx], factor: e.target.value };
+                                                setEvaluationCriteria(next);
+                                              }}
+                                            />
+                                          </div>
+                                          <div>
+                                            <label className="block text-[9px] text-gray-600 mb-0.5">비율</label>
+                                            <div className="flex items-center gap-1">
+                                              <input
+                                                type="number"
+                                                min={0}
+                                                max={criteria.ratio}
+                                                className="w-full border border-gray-300 rounded-md px-1.5 py-0.5 text-[10px]"
+                                                value={sub.ratio || ''}
+                                                onChange={(e) => {
+                                                  const value = Math.min(Number(e.target.value) || 0, criteria.ratio);
+                                                  const next = [...evaluationCriteria];
+                                                  next[idx].subCriteria[subIdx] = { ...next[idx].subCriteria[subIdx], ratio: value };
+                                                  setEvaluationCriteria(next);
+                                                }}
+                                              />
+                                              <span className="text-[9px] text-gray-500">%</span>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                                <div className="mt-2 text-[10px] text-gray-600">
+                                  소 평가 기준 비율 합계: {criteria.subCriteria.reduce((sum, s) => sum + (s.ratio || 0), 0)}% / 대 평가 기준 비율: {criteria.ratio}%
+                                  {criteria.subCriteria.reduce((sum, s) => sum + (s.ratio || 0), 0) > criteria.ratio && (
+                                    <span className="text-red-600 ml-2">(대 평가 기준 비율을 초과했습니다)</span>
+                                  )}
+                                </div>
+                              </>
+                            ) : (
+                              <div className="text-[11px] text-gray-400 text-center py-2 border border-dashed border-gray-200 rounded-md">
+                                소 평가 기준이 없습니다. "+ 추가" 버튼을 클릭하여 추가하세요.
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    
+                    {/* 비율 합계 표시 */}
+                    <div className="text-[11px] text-gray-600 mt-2">
+                      총 비율: {evaluationCriteria.reduce((sum, c) => sum + c.ratio, 0)}%
+                      {evaluationCriteria.reduce((sum, c) => sum + c.ratio, 0) !== 100 && (
+                        <span className="text-red-600 ml-2">(합계가 100%가 되도록 설정하세요)</span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* 파일 종류 및 기타 설정 */}
+                  <div className="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-gray-200">
                     <div>
                       <label className="block mb-1 text-[11px] text-gray-500">검색 허용횟수</label>
                       <input
